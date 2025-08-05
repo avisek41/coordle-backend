@@ -4,6 +4,7 @@ import helmet from "helmet";
 import morgan from "morgan";
 import dotenv from "dotenv";
 import connectDB from "./config/db";
+import userRoutes from "./routes/userRoutes";
 
 // Load environment variables
 dotenv.config();
@@ -31,6 +32,9 @@ app.get("/health", (req: Request, res: Response) => {
   });
 });
 
+// API Routes
+app.use("/api/users", userRoutes);
+
 // Root endpoint
 app.get("/", (req: Request, res: Response) => {
   res.status(200).json({
@@ -38,6 +42,7 @@ app.get("/", (req: Request, res: Response) => {
     version: "1.0.0",
     endpoints: {
       health: "/health",
+      users: "/api/users",
     },
   });
 });
