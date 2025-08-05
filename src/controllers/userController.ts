@@ -2,49 +2,51 @@ import { Request, Response } from "express";
 import { User, UserRole, IUser } from "../models";
 
 // Register a new user
-export const registerUser = async (req: Request, res: Response) => {
+export const registerUser = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const { name, email, password, confirmPassword, userRole } = req.body;
 
-    // Validate required fields
     if (!name || !email || !password || !confirmPassword) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: "Name, email, password, and confirm password are required",
       });
+      return;
     }
 
-    // Check if passwords match
     if (password !== confirmPassword) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: "Password and confirm password do not match",
       });
+      return;
     }
 
-    // Validate password length
     if (password.length < 6) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: "Password must be at least 6 characters long",
       });
+      return;
     }
 
-    // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: "User with this email already exists",
       });
+      return;
     }
 
-    // Create new user
     const newUser = new User({
       name,
       email,
-      password, // In a real app, you'd hash this password
-      userRole: userRole || UserRole.TRAVELLER, // Default to traveller if not specified
+      password, // Hash in real app
+      userRole: userRole || UserRole.TRAVELLER,
     });
 
     const savedUser = await newUser.save();
@@ -60,45 +62,46 @@ export const registerUser = async (req: Request, res: Response) => {
         createdAt: savedUser.createdAt,
       },
     });
+    return;
   } catch (error) {
     console.error("Registration error:", error);
     res.status(500).json({
       success: false,
       message: "Internal server error during registration",
     });
+    return;
   }
 };
 
-// Login user
-export const loginUser = async (req: Request, res: Response) => {
+export const loginUser = async (req: Request, res: Response): Promise<void> => {
   try {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: "Email and password are required for login",
       });
+      return;
     }
 
-    // Find user by email
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(404).json({
+      res.status(404).json({
         success: false,
         message: "User not found",
       });
+      return;
     }
 
-    // Check password (in a real app, you'd compare hashed passwords)
     if (user.password !== password) {
-      return res.status(401).json({
+      res.status(401).json({
         success: false,
         message: "Invalid password",
       });
+      return;
     }
 
-    // Return user data (in a real app, you'd add JWT token here)
     res.status(200).json({
       success: true,
       message: "Login successful",
@@ -110,17 +113,21 @@ export const loginUser = async (req: Request, res: Response) => {
         createdAt: user.createdAt,
       },
     });
+    return;
   } catch (error) {
     console.error("Login error:", error);
     res.status(500).json({
       success: false,
       message: "Internal server error during login",
     });
+    return;
   }
 };
 
-// Get all users
-export const getAllUsers = async (req: Request, res: Response) => {
+export const getAllUsers = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const users = await User.find({}).select("-__v");
 
@@ -130,26 +137,31 @@ export const getAllUsers = async (req: Request, res: Response) => {
       count: users.length,
       data: users,
     });
+    return;
   } catch (error) {
     console.error("Get users error:", error);
     res.status(500).json({
       success: false,
       message: "Internal server error while fetching users",
     });
+    return;
   }
 };
 
-// Get user by ID
-export const getUserById = async (req: Request, res: Response) => {
+export const getUserById = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const { id } = req.params;
 
     const user = await User.findById(id).select("-__v");
     if (!user) {
-      return res.status(404).json({
+      res.status(404).json({
         success: false,
         message: "User not found",
       });
+      return;
     }
 
     res.status(200).json({
@@ -157,42 +169,45 @@ export const getUserById = async (req: Request, res: Response) => {
       message: "User retrieved successfully",
       data: user,
     });
+    return;
   } catch (error) {
     console.error("Get user by ID error:", error);
     res.status(500).json({
       success: false,
       message: "Internal server error while fetching user",
     });
+    return;
   }
 };
 
-// Update user
-export const updateUser = async (req: Request, res: Response) => {
+export const updateUser = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const { id } = req.params;
     const { name, email, userRole } = req.body;
 
-    // Check if user exists
     const existingUser = await User.findById(id);
     if (!existingUser) {
-      return res.status(404).json({
+      res.status(404).json({
         success: false,
         message: "User not found",
       });
+      return;
     }
 
-    // Check if email is being changed and if it's already taken
     if (email && email !== existingUser.email) {
       const emailExists = await User.findOne({ email });
       if (emailExists) {
-        return res.status(400).json({
+        res.status(400).json({
           success: false,
           message: "Email already exists",
         });
+        return;
       }
     }
 
-    // Update user
     const updatedUser = await User.findByIdAndUpdate(
       id,
       {
@@ -208,52 +223,61 @@ export const updateUser = async (req: Request, res: Response) => {
       message: "User updated successfully",
       data: updatedUser,
     });
+    return;
   } catch (error) {
     console.error("Update user error:", error);
     res.status(500).json({
       success: false,
       message: "Internal server error while updating user",
     });
+    return;
   }
 };
 
-// Delete user
-export const deleteUser = async (req: Request, res: Response) => {
+export const deleteUser = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const { id } = req.params;
 
     const user = await User.findByIdAndDelete(id);
     if (!user) {
-      return res.status(404).json({
+      res.status(404).json({
         success: false,
         message: "User not found",
       });
+      return;
     }
 
     res.status(200).json({
       success: true,
       message: "User deleted successfully",
     });
+    return;
   } catch (error) {
     console.error("Delete user error:", error);
     res.status(500).json({
       success: false,
       message: "Internal server error while deleting user",
     });
+    return;
   }
 };
 
-// Get users by role
-export const getUsersByRole = async (req: Request, res: Response) => {
+export const getUsersByRole = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const { role } = req.params;
 
-    // Validate role
     if (!Object.values(UserRole).includes(role as UserRole)) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: "Invalid role. Must be 'owner', 'host', or 'traveller'",
       });
+      return;
     }
 
     const users = await User.find({ userRole: role }).select("-__v");
@@ -264,33 +288,39 @@ export const getUsersByRole = async (req: Request, res: Response) => {
       count: users.length,
       data: users,
     });
+    return;
   } catch (error) {
     console.error("Get users by role error:", error);
     res.status(500).json({
       success: false,
       message: "Internal server error while fetching users by role",
     });
+    return;
   }
 };
 
-// Get user profile (current user)
-export const getUserProfile = async (req: Request, res: Response) => {
+export const getUserProfile = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
-    const { userId } = req.body; // In a real app, this would come from JWT token
+    const { userId } = req.body;
 
     if (!userId) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: "User ID is required",
       });
+      return;
     }
 
     const user = await User.findById(userId).select("-__v");
     if (!user) {
-      return res.status(404).json({
+      res.status(404).json({
         success: false,
         message: "User not found",
       });
+      return;
     }
 
     res.status(200).json({
@@ -298,11 +328,13 @@ export const getUserProfile = async (req: Request, res: Response) => {
       message: "User profile retrieved successfully",
       data: user,
     });
+    return;
   } catch (error) {
     console.error("Get user profile error:", error);
     res.status(500).json({
       success: false,
       message: "Internal server error while fetching user profile",
     });
+    return;
   }
 };
