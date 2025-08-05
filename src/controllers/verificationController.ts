@@ -1,6 +1,10 @@
 import { Request, Response } from "express";
-import { User, PhoneVerification } from "../models";
+import { User, PhoneVerification, EmailVerificationLink } from "../models";
 import { sendVerificationCode as sendTwilioSMS } from "../config/twilio";
+import {
+  sendEmailVerificationLink as sendEmailVerificationLinkEmail,
+  generateEmailVerificationToken,
+} from "../config/email";
 
 // Generate a random 6-digit code
 const generateVerificationCode = (): string => {
@@ -280,6 +284,243 @@ export const registerUserAfterVerification = async (
     res.status(500).json({
       success: false,
       message: "Internal server error while registering user",
+    });
+  }
+};
+
+// Send email verification link
+export const sendEmailVerificationLink = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      res.status(400).json({
+        success: false,
+        message: "Email is required",
+      });
+      return;
+    }
+
+    // Check if email is already verified for an existing user
+    const existingUser = await User.findOne({ email });
+    if (existingUser && existingUser.isEmailVerified) {
+      res.status(400).json({
+        success: false,
+        message: "Email is already verified for another user",
+      });
+      return;
+    }
+
+    // Generate verification token
+    const token = generateEmailVerificationToken();
+
+    // Delete any existing verification links for this email
+    await EmailVerificationLink.deleteMany({ email });
+
+    // Create new verification record
+    const verification = new EmailVerificationLink({
+      email,
+      token,
+    });
+
+    await verification.save();
+
+    // Construct verification URL
+    const baseUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+    const verificationUrl = `${baseUrl}/verify-email?token=${token}&email=${encodeURIComponent(
+      email
+    )}`;
+
+    // Send email verification link
+    const emailSent = await sendEmailVerificationLinkEmail(
+      email,
+      token,
+      verificationUrl
+    );
+
+    if (!emailSent) {
+      res.status(500).json({
+        success: false,
+        message: "Failed to send verification email. Please try again.",
+      });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Email verification link sent successfully",
+      data: {
+        email,
+        expiresIn: "24 hours",
+      },
+    });
+  } catch (error) {
+    console.error("Send email verification link error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error while sending verification email",
+    });
+  }
+};
+
+// Verify email address
+export const verifyEmailAddress = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { token, email } = req.body;
+
+    if (!token || !email) {
+      res.status(400).json({
+        success: false,
+        message: "Verification token and email are required",
+      });
+      return;
+    }
+
+    // Find the verification record
+    const verification = await EmailVerificationLink.findOne({
+      email,
+      token,
+      isUsed: false,
+      expiresAt: { $gt: new Date() },
+    });
+
+    if (!verification) {
+      res.status(400).json({
+        success: false,
+        message: "Invalid or expired verification link",
+      });
+      return;
+    }
+
+    // Mark verification as used
+    verification.isUsed = true;
+    await verification.save();
+
+    // Delete the verification record after successful verification
+    await EmailVerificationLink.deleteOne({ _id: verification._id });
+
+    // Create or update user with verified email
+    let user = await User.findOne({ email });
+    if (user) {
+      // Update existing user
+      user.isEmailVerified = true;
+      await user.save();
+    } else {
+      // Create new user with verified email and default values
+      user = new User({
+        email,
+        name: "", // Empty string for name
+        isPhoneVerified: false, // Phone verification pending
+        isEmailVerified: true,
+        userRole: "traveller", // Default role
+      });
+      await user.save();
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Email address verified successfully",
+      data: {
+        email,
+        isEmailVerified: true,
+        isPhoneVerified: user.isPhoneVerified,
+        userId: user._id,
+      },
+    });
+  } catch (error) {
+    console.error("Verify email address error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error while verifying email address",
+    });
+  }
+};
+
+// Resend email verification link
+export const resendEmailVerificationLink = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      res.status(400).json({
+        success: false,
+        message: "Email is required",
+      });
+      return;
+    }
+
+    // Check if there's a recent verification attempt (within 5 minutes)
+    const recentVerification = await EmailVerificationLink.findOne({
+      email,
+      createdAt: { $gt: new Date(Date.now() - 5 * 60 * 1000) }, // 5 minutes ago
+    });
+
+    if (recentVerification) {
+      res.status(429).json({
+        success: false,
+        message:
+          "Please wait 5 minutes before requesting another verification link",
+      });
+      return;
+    }
+
+    // Generate new verification token
+    const token = generateEmailVerificationToken();
+
+    // Delete any existing verification links for this email
+    await EmailVerificationLink.deleteMany({ email });
+
+    // Create new verification record
+    const verification = new EmailVerificationLink({
+      email,
+      token,
+    });
+
+    await verification.save();
+
+    // Construct verification URL
+    const baseUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+    const verificationUrl = `${baseUrl}/verify-email?token=${token}&email=${encodeURIComponent(
+      email
+    )}`;
+
+    // Send email verification link
+    const emailSent = await sendEmailVerificationLinkEmail(
+      email,
+      token,
+      verificationUrl
+    );
+
+    if (!emailSent) {
+      res.status(500).json({
+        success: false,
+        message: "Failed to send verification email. Please try again.",
+      });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Email verification link resent successfully",
+      data: {
+        email,
+        expiresIn: "24 hours",
+      },
+    });
+  } catch (error) {
+    console.error("Resend email verification link error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error while resending verification email",
     });
   }
 };

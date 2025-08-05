@@ -3,7 +3,8 @@ export {
   default as PhoneVerification,
   type IPhoneVerification,
 } from "./PhoneVerification";
+export { default as PasswordReset, type IPasswordReset } from "./PasswordReset";
 export {
-  default as PasswordReset,
-  type IPasswordReset,
-} from "./PasswordReset";
+  default as EmailVerificationLink,
+  type IEmailVerificationLink,
+} from "./EmailVerificationLink";

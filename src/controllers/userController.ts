@@ -8,7 +8,11 @@ import {
   PasswordReset,
 } from "../models";
 import { sendVerificationCode as sendTwilioSMS } from "../config/twilio";
-import { generateToken } from "../config/jwt";
+import {
+  generateToken,
+  generateTokenPair,
+  verifyRefreshToken,
+} from "../config/jwt";
 import { sendPasswordResetEmail, generateResetToken } from "../config/email";
 import {
   sendSuccessResponse,
@@ -107,8 +111,8 @@ export const registerUser = async (
 
       const savedUser = await newUser.save();
 
-      // Generate JWT token
-      const token = generateToken({
+      // Generate JWT token pair
+      const tokenPair = generateTokenPair({
         userId: (savedUser._id as any).toString(),
         email: savedUser.email || undefined,
         userRole: savedUser.userRole,
@@ -128,7 +132,8 @@ export const registerUser = async (
           isProfileSetup: savedUser.isProfileSetup,
           userRole: savedUser.userRole,
           createdAt: savedUser.createdAt,
-          token,
+          accessToken: tokenPair.accessToken,
+          refreshToken: tokenPair.refreshToken,
         }
       );
       return;
