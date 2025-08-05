@@ -9,7 +9,12 @@ import {
   deleteUser,
   getUsersByRole,
   getUserProfile,
+  getCurrentUserProfile,
+  requestPasswordReset,
+  resetPassword,
+  forgetPassword,
 } from "../controllers/userController";
+import { authenticateToken } from "../middleware/auth";
 
 const router = Router();
 
@@ -18,8 +23,14 @@ router.post("/register", registerUser);
 router.post("/login", loginUser);
 router.post("/send-login-code", sendLoginVerificationCode);
 
-// User profile route
+// Password reset routes
+router.post("/forgot-password", requestPasswordReset);
+router.post("/forget-password", forgetPassword);
+router.post("/reset-password", resetPassword);
+
+// User profile routes
 router.get("/profile", getUserProfile);
+router.get("/me", authenticateToken, getCurrentUserProfile);
 
 // User management routes
 router.get("/", getAllUsers);

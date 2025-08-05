@@ -21,51 +21,68 @@ A Node.js Express backend API for the Coordle application, built with TypeScript
 ## 🛠️ Installation
 
 1. **Clone the repository**
+
    ```bash
    git clone <repository-url>
    cd coordle-backend
    ```
 
 2. **Install dependencies**
+
    ```bash
    npm install
    ```
 
 3. **Set up environment variables**
    Create a `.env` file in the root directory:
+
    ```bash
    cp .env.example .env
    ```
-   
+
    Then edit the `.env` file with your configuration:
+
    ```env
    # Server Configuration
    PORT=3000
    NODE_ENV=development
-   
+
    # MongoDB Configuration
    MONGODB_URI=mongodb://localhost:27017/coordle
-   
+
    # Security
    JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
    JWT_EXPIRES_IN=7d
-   
+
    # CORS Configuration
    CORS_ORIGIN=http://localhost:3000
-   
+
    # Logging
    LOG_LEVEL=debug
+
+   # Email Configuration (for password reset)
+   EMAIL_USER=your-email@gmail.com
+   EMAIL_PASSWORD=your-app-password
+   FRONTEND_URL=http://localhost:3000
+
+   # Twilio Configuration (for SMS verification)
+   TWILIO_ACCOUNT_SID=your-twilio-account-sid
+   TWILIO_AUTH_TOKEN=your-twilio-auth-token
+   TWILIO_PHONE_NUMBER=your-twilio-phone-number
    ```
 
 ## 🏃‍♂️ Running the Application
 
 ### Development Mode
+
 ```bash
 npm run dev
 ```
+
 This starts the server with hot reload using ts-node-dev.
 
 ### Production Mode
+
 ```bash
 npm run build
 npm start
@@ -95,13 +112,35 @@ coordle-backend/
 ## 🌐 API Endpoints
 
 ### Health Check
+
 - `GET /health` - Server health status
 
 ### Root
+
 - `GET /` - API information and available endpoints
 
-### API Routes
-- `GET /api` - API endpoint (to be implemented)
+### Authentication Routes
+
+- `POST /api/users/register` - Register a new user (returns JWT token)
+- `POST /api/users/login` - Login user (returns JWT token)
+- `POST /api/users/send-login-code` - Send verification code for phone login
+- `POST /api/users/forgot-password` - Request password reset (sends reset email)
+- `POST /api/users/reset-password` - Reset password with token
+
+### User Routes
+
+- `GET /api/users/me` - Get current user profile (requires JWT token)
+- `GET /api/users/profile` - Get user profile by userId
+- `GET /api/users` - Get all users
+- `GET /api/users/:id` - Get user by ID
+- `PUT /api/users/:id` - Update user
+- `DELETE /api/users/:id` - Delete user
+- `GET /api/users/role/:role` - Get users by role
+
+### Verification Routes
+
+- `POST /api/verification/send-code` - Send verification code
+- `POST /api/verification/verify-code` - Verify code
 
 ## 🔒 Security Features
 
@@ -109,6 +148,9 @@ coordle-backend/
 - **CORS**: Cross-origin resource sharing
 - **Input Validation**: JSON body parsing with size limits
 - **Error Handling**: Centralized error handling middleware
+- **JWT Authentication**: Secure token-based authentication
+- **Password Hashing**: Bcrypt password hashing
+- **Role-based Access Control**: User role validation
 
 ## 📊 Logging
 
@@ -121,6 +163,7 @@ The application connects to MongoDB using Mongoose. Make sure MongoDB is running
 ## 🚨 Error Handling
 
 The application includes:
+
 - Global error handling middleware
 - 404 route handler
 - Graceful shutdown handling
@@ -133,17 +176,95 @@ The application includes:
 3. Run `npm run dev`
 4. Access the API at `http://localhost:3000`
 
+## 🔐 JWT Authentication
+
+### Register a new user
+
+```bash
+curl -X POST http://localhost:3000/api/users/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user@example.com",
+    "password": "password123",
+    "confirmPassword": "password123",
+    "userRole": "traveller",
+    "registrationMethod": "email"
+  }'
+```
+
+### Login with email
+
+```bash
+curl -X POST http://localhost:3000/api/users/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user@example.com",
+    "password": "password123",
+    "loginMethod": "email"
+  }'
+```
+
+### Access protected route
+
+```bash
+curl -X GET http://localhost:3000/api/users/me \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+### Phone-based login
+
+```bash
+# Step 1: Send verification code
+curl -X POST http://localhost:3000/api/users/send-login-code \
+  -H "Content-Type: application/json" \
+  -d '{
+    "phoneNumber": "+1234567890"
+  }'
+
+# Step 2: Login with verification code
+curl -X POST http://localhost:3000/api/users/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "phoneNumber": "+1234567890",
+    "verificationCode": "123456",
+    "loginMethod": "phone"
+  }'
+```
+
+### Password Reset
+
+```bash
+# Step 1: Request password reset
+curl -X POST http://localhost:3000/api/users/forgot-password \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user@example.com"
+  }'
+
+# Step 2: Reset password with token (received via email)
+curl -X POST http://localhost:3000/api/users/reset-password \
+  -H "Content-Type: application/json" \
+  -d '{
+    "token": "reset_token_from_email",
+    "newPassword": "newpassword123",
+    "confirmPassword": "newpassword123"
+  }'
+```
+
 ## 📝 Environment Variables
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `PORT` | Server port | 3000 |
-| `NODE_ENV` | Environment | development |
-| `MONGODB_URI` | MongoDB connection string | mongodb://localhost:27017/coordle |
-| `JWT_SECRET` | JWT signing secret | (required) |
-| `JWT_EXPIRES_IN` | JWT expiration time | 7d |
-| `CORS_ORIGIN` | CORS allowed origin | http://localhost:3000 |
-| `LOG_LEVEL` | Logging level | debug |
+| Variable         | Description                      | Default                           |
+| ---------------- | -------------------------------- | --------------------------------- |
+| `PORT`           | Server port                      | 3000                              |
+| `NODE_ENV`       | Environment                      | development                       |
+| `MONGODB_URI`    | MongoDB connection string        | mongodb://localhost:27017/coordle |
+| `JWT_SECRET`     | JWT signing secret               | (required)                        |
+| `JWT_EXPIRES_IN` | JWT expiration time              | 7d                                |
+| `CORS_ORIGIN`    | CORS allowed origin              | http://localhost:3000             |
+| `LOG_LEVEL`      | Logging level                    | debug                             |
+| `EMAIL_USER`     | Email address for sending emails | (required for password reset)     |
+| `EMAIL_PASSWORD` | Email password/app password      | (required for password reset)     |
+| `FRONTEND_URL`   | Frontend URL for reset links     | http://localhost:3000             |
 
 ## 🤝 Contributing
 
@@ -155,4 +276,4 @@ The application includes:
 
 ## 📄 License
 
-This project is licensed under the ISC License. 
+This project is licensed under the ISC License.

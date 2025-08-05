@@ -1,4 +1,5 @@
 import mongoose, { Document, Schema } from "mongoose";
+import bcrypt from "bcryptjs";
 
 // Define the user role enum
 export enum UserRole {
@@ -19,6 +20,7 @@ export interface IUser extends Document {
   userRole: UserRole;
   createdAt: Date;
   updatedAt: Date;
+  comparePassword(candidatePassword: string): Promise<boolean>;
 }
 
 // Create the User schema
@@ -80,6 +82,33 @@ const userSchema = new Schema<IUser>(
     timestamps: true, // Automatically add createdAt and updatedAt fields
   }
 );
+
+// Hash password before saving
+userSchema.pre("save", async function (next) {
+  if (!this.isModified("password")) {
+    return next();
+  }
+
+  try {
+    if (this.password) {
+      const saltRounds = 12;
+      this.password = await bcrypt.hash(this.password, saltRounds);
+    }
+    next();
+  } catch (error) {
+    next(error as Error);
+  }
+});
+
+// Method to compare password
+userSchema.methods.comparePassword = async function (
+  candidatePassword: string
+): Promise<boolean> {
+  if (!this.password) {
+    return false;
+  }
+  return bcrypt.compare(candidatePassword, this.password);
+};
 
 // Create indexes for better query performance
 userSchema.index({ email: 1 });
