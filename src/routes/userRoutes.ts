@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
   registerUser,
   loginUser,
+  sendLoginVerificationCode,
   getAllUsers,
   getUserById,
   updateUser,
@@ -15,6 +16,7 @@ const router = Router();
 // Authentication routes
 router.post("/register", registerUser);
 router.post("/login", loginUser);
+router.post("/send-login-code", sendLoginVerificationCode);
 
 // User profile route
 router.get("/profile", getUserProfile);

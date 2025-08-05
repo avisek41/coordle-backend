@@ -1,5 +1,12 @@
 import { Request, Response } from "express";
 import { User, UserRole, IUser, PhoneVerification } from "../models";
+import { sendVerificationCode as sendTwilioSMS } from "../config/twilio";
+import {
+  sendSuccessResponse,
+  sendErrorResponse,
+  STATUS_CODES,
+  MESSAGES,
+} from "../utils/apiResponse";
 
 // Register a new user
 export const registerUser = async (
@@ -7,247 +14,257 @@ export const registerUser = async (
   res: Response
 ): Promise<void> => {
   try {
-    const {
-      name,
-      email,
-      password,
-      confirmPassword,
-      userRole,
-      phoneNumber,
-      registrationMethod,
-    } = req.body;
+    const { email, password, confirmPassword, userRole, registrationMethod } =
+      req.body;
 
     // Validate registration method
     if (
       !registrationMethod ||
       !["email", "phone"].includes(registrationMethod)
     ) {
-      res.status(400).json({
-        success: false,
-        message: "Registration method must be either 'email' or 'phone'",
-      });
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        MESSAGES.INVALID_REGISTRATION_METHOD
+      );
       return;
     }
 
     // Validate common required fields
-    if (!name || !userRole) {
-      res.status(400).json({
-        success: false,
-        message: "Name and user role are required",
-      });
+    if (!userRole) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        MESSAGES.MISSING_REQUIRED_FIELDS
+      );
       return;
     }
 
     // Email-based registration
     if (registrationMethod === "email") {
       if (!email || !password || !confirmPassword) {
-        res.status(400).json({
-          success: false,
-          message:
-            "Email, password, and confirm password are required for email registration",
-        });
+        sendErrorResponse(
+          res,
+          STATUS_CODES.BAD_REQUEST,
+          MESSAGES.EMAIL_PASSWORD_REQUIRED
+        );
         return;
       }
 
       // Check if passwords match
       if (password !== confirmPassword) {
-        res.status(400).json({
-          success: false,
-          message: "Password and confirm password do not match",
-        });
+        sendErrorResponse(
+          res,
+          STATUS_CODES.BAD_REQUEST,
+          MESSAGES.PASSWORDS_DONT_MATCH
+        );
         return;
       }
 
       // Validate password length
       if (password.length < 6) {
-        res.status(400).json({
-          success: false,
-          message: "Password must be at least 6 characters long",
-        });
+        sendErrorResponse(
+          res,
+          STATUS_CODES.BAD_REQUEST,
+          MESSAGES.PASSWORD_TOO_SHORT
+        );
         return;
       }
 
       // Check if user already exists by email
       const existingUserByEmail = await User.findOne({ email });
       if (existingUserByEmail) {
-        res.status(400).json({
-          success: false,
-          message: "User with this email already exists",
-        });
+        sendErrorResponse(
+          res,
+          STATUS_CODES.CONFLICT,
+          MESSAGES.USER_ALREADY_EXISTS
+        );
         return;
       }
 
       // Create new user with email
       const newUser = new User({
-        name,
         email,
         password, // Hash in real app
         userRole: userRole || UserRole.TRAVELLER,
-        phoneNumber: phoneNumber || null, // Optional for email registration
         isPhoneVerified: false,
         isEmailVerified: true, // Email is verified since they registered with email
       });
 
       const savedUser = await newUser.save();
 
-      res.status(201).json({
-        success: true,
-        message: "User registered successfully with email",
-        data: {
+      sendSuccessResponse(
+        res,
+        STATUS_CODES.CREATED,
+        "User registered successfully with email",
+        {
           id: savedUser._id,
           name: savedUser.name,
           email: savedUser.email,
           phoneNumber: savedUser.phoneNumber,
           isPhoneVerified: savedUser.isPhoneVerified,
           isEmailVerified: savedUser.isEmailVerified,
+          isProfileSetup: savedUser.isProfileSetup,
           userRole: savedUser.userRole,
           createdAt: savedUser.createdAt,
-        },
-      });
+        }
+      );
       return;
     }
 
     // Phone-based registration
     if (registrationMethod === "phone") {
-      if (!phoneNumber) {
-        res.status(400).json({
-          success: false,
-          message: "Phone number is required for phone registration",
-        });
-        return;
-      }
-
-      // Check if user already exists by phone number
-      const existingUserByPhone = await User.findOne({ phoneNumber });
-      if (existingUserByPhone) {
-        res.status(400).json({
-          success: false,
-          message: "User with this phone number already exists",
-        });
-        return;
-      }
-
-      // Check if phone number is verified
-      const verification = await PhoneVerification.findOne({
-        phoneNumber,
-        isUsed: true,
-        expiresAt: { $gt: new Date() },
-      });
-
-      if (!verification) {
-        res.status(400).json({
-          success: false,
-          message:
-            "Phone number must be verified before registration. Please verify your phone number first.",
-        });
-        return;
-      }
-
-      // Create new user with phone
-      const newUser = new User({
-        name,
-        email: email || null, // Optional for phone registration
-        password: null, // No password for phone registration
-        phoneNumber,
-        isPhoneVerified: true,
-        isEmailVerified: false, // Email verification pending for phone registration
-        userRole: userRole || UserRole.TRAVELLER,
-      });
-
-      const savedUser = await newUser.save();
-
-      res.status(201).json({
-        success: true,
-        message: "User registered successfully with phone verification",
-        data: {
-          id: savedUser._id,
-          name: savedUser.name,
-          email: savedUser.email,
-          phoneNumber: savedUser.phoneNumber,
-          isPhoneVerified: savedUser.isPhoneVerified,
-          isEmailVerified: savedUser.isEmailVerified,
-          userRole: savedUser.userRole,
-          createdAt: savedUser.createdAt,
-        },
-      });
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        "Phone registration requires phone number verification first"
+      );
       return;
     }
   } catch (error) {
     console.error("Registration error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Internal server error during registration",
-    });
+    sendErrorResponse(
+      res,
+      STATUS_CODES.INTERNAL_SERVER_ERROR,
+      MESSAGES.INTERNAL_SERVER_ERROR
+    );
     return;
+  }
+};
+
+// Generate a random 6-digit code
+const generateVerificationCode = (): string => {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+};
+
+// Send login verification code
+export const sendLoginVerificationCode = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { phoneNumber } = req.body;
+
+    if (!phoneNumber) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        MESSAGES.PHONE_NUMBER_REQUIRED
+      );
+      return;
+    }
+
+    // Check if user exists
+    const user = await User.findOne({ phoneNumber });
+    if (!user) {
+      sendErrorResponse(res, STATUS_CODES.NOT_FOUND, MESSAGES.USER_NOT_FOUND);
+      return;
+    }
+
+    // Generate verification code
+    const code = generateVerificationCode();
+
+    // Delete any existing verification codes for this phone number
+    await PhoneVerification.deleteMany({ phoneNumber });
+
+    // Create new verification record
+    const verification = new PhoneVerification({
+      phoneNumber,
+      code,
+    });
+
+    await verification.save();
+
+    // Send SMS via Twilio
+    const smsSent = await sendTwilioSMS(phoneNumber, code);
+
+    if (!smsSent) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.INTERNAL_SERVER_ERROR,
+        MESSAGES.SMS_SEND_FAILED
+      );
+      return;
+    }
+
+    sendSuccessResponse(res, STATUS_CODES.OK, MESSAGES.VERIFICATION_CODE_SENT, {
+      phoneNumber,
+      expiresIn: "10 minutes",
+    });
+  } catch (error) {
+    console.error("Send login verification code error:", error);
+    sendErrorResponse(
+      res,
+      STATUS_CODES.INTERNAL_SERVER_ERROR,
+      MESSAGES.INTERNAL_SERVER_ERROR
+    );
   }
 };
 
 export const loginUser = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { email, password, phoneNumber, loginMethod } = req.body;
+    const { email, password, phoneNumber, loginMethod, verificationCode } =
+      req.body;
 
     // Validate login method
     if (!loginMethod || !["email", "phone"].includes(loginMethod)) {
-      res.status(400).json({
-        success: false,
-        message: "Login method must be either 'email' or 'phone'",
-      });
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        MESSAGES.INVALID_LOGIN_METHOD
+      );
       return;
     }
 
     // Email-based login
     if (loginMethod === "email") {
       if (!email || !password) {
-        res.status(400).json({
-          success: false,
-          message: "Email and password are required for email login",
-        });
+        sendErrorResponse(
+          res,
+          STATUS_CODES.BAD_REQUEST,
+          MESSAGES.EMAIL_PASSWORD_REQUIRED
+        );
         return;
       }
 
       // Find user by email
       const user = await User.findOne({ email });
       if (!user) {
-        res.status(404).json({
-          success: false,
-          message: "User not found",
-        });
+        sendErrorResponse(res, STATUS_CODES.NOT_FOUND, MESSAGES.USER_NOT_FOUND);
         return;
       }
 
       // Check if user has password (email-based registration)
       if (!user.password) {
-        res.status(401).json({
-          success: false,
-          message:
-            "This account was registered with phone number. Please use phone login.",
-        });
+        sendErrorResponse(
+          res,
+          STATUS_CODES.UNAUTHORIZED,
+          "This account was registered with phone number. Please use phone login."
+        );
         return;
       }
 
       // Check password (in a real app, you'd compare hashed passwords)
       if (user.password !== password) {
-        res.status(401).json({
-          success: false,
-          message: "Invalid password",
-        });
+        sendErrorResponse(
+          res,
+          STATUS_CODES.UNAUTHORIZED,
+          MESSAGES.INVALID_PASSWORD
+        );
         return;
       }
 
       // Return user data (in a real app, you'd add JWT token here)
-      res.status(200).json({
-        success: true,
-        message: "Login successful with email",
-        data: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          phoneNumber: user.phoneNumber,
-          isPhoneVerified: user.isPhoneVerified,
-          isEmailVerified: user.isEmailVerified,
-          userRole: user.userRole,
-          createdAt: user.createdAt,
-        },
+      sendSuccessResponse(res, STATUS_CODES.OK, "Login successful with email", {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        phoneNumber: user.phoneNumber,
+        isPhoneVerified: user.isPhoneVerified,
+        isEmailVerified: user.isEmailVerified,
+        isProfileSetup: user.isProfileSetup,
+        userRole: user.userRole,
+        createdAt: user.createdAt,
       });
       return;
     }
@@ -255,56 +272,90 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
     // Phone-based login
     if (loginMethod === "phone") {
       if (!phoneNumber) {
-        res.status(400).json({
-          success: false,
-          message: "Phone number is required for phone login",
-        });
+        sendErrorResponse(
+          res,
+          STATUS_CODES.BAD_REQUEST,
+          MESSAGES.PHONE_NUMBER_REQUIRED
+        );
         return;
       }
 
-      // Find user by phone number
-      const user = await User.findOne({ phoneNumber });
-      if (!user) {
-        res.status(404).json({
-          success: false,
-          message: "User not found",
+      // If verification code is provided, verify it
+      if (verificationCode) {
+        // Find the verification record
+        const verification = await PhoneVerification.findOne({
+          phoneNumber,
+          code: verificationCode,
+          isUsed: false,
+          expiresAt: { $gt: new Date() },
         });
+
+        if (!verification) {
+          sendErrorResponse(
+            res,
+            STATUS_CODES.BAD_REQUEST,
+            MESSAGES.INVALID_VERIFICATION_CODE
+          );
+          return;
+        }
+
+        // Mark verification as used and delete the record
+        verification.isUsed = true;
+        await verification.save();
+        await PhoneVerification.deleteOne({ _id: verification._id });
+
+        // Find user by phone number
+        const user = await User.findOne({ phoneNumber });
+        if (!user) {
+          sendErrorResponse(
+            res,
+            STATUS_CODES.NOT_FOUND,
+            MESSAGES.USER_NOT_FOUND
+          );
+          return;
+        }
+
+        // Update phone verification status if not already verified
+        if (!user.isPhoneVerified) {
+          user.isPhoneVerified = true;
+          await user.save();
+        }
+
+        // Return user data
+        sendSuccessResponse(
+          res,
+          STATUS_CODES.OK,
+          "Login successful with phone verification",
+          {
+            id: user._id,
+            name: user.name,
+            email: user.email,
+            phoneNumber: user.phoneNumber,
+            isPhoneVerified: user.isPhoneVerified,
+            isEmailVerified: user.isEmailVerified,
+            isProfileSetup: user.isProfileSetup,
+            userRole: user.userRole,
+            createdAt: user.createdAt,
+          }
+        );
+        return;
+      } else {
+        // No verification code provided, return error asking to send code first
+        sendErrorResponse(
+          res,
+          STATUS_CODES.BAD_REQUEST,
+          MESSAGES.VERIFICATION_CODE_REQUIRED
+        );
         return;
       }
-
-      // Check if phone is verified
-      if (!user.isPhoneVerified) {
-        res.status(401).json({
-          success: false,
-          message:
-            "Phone number is not verified. Please verify your phone number first.",
-        });
-        return;
-      }
-
-      // Return user data (in a real app, you'd add JWT token here)
-      res.status(200).json({
-        success: true,
-        message: "Login successful with phone",
-        data: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          phoneNumber: user.phoneNumber,
-          isPhoneVerified: user.isPhoneVerified,
-          isEmailVerified: user.isEmailVerified,
-          userRole: user.userRole,
-          createdAt: user.createdAt,
-        },
-      });
-      return;
     }
   } catch (error) {
     console.error("Login error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Internal server error during login",
-    });
+    sendErrorResponse(
+      res,
+      STATUS_CODES.INTERNAL_SERVER_ERROR,
+      MESSAGES.INTERNAL_SERVER_ERROR
+    );
     return;
   }
 };
@@ -316,19 +367,18 @@ export const getAllUsers = async (
   try {
     const users = await User.find({}).select("-__v");
 
-    res.status(200).json({
-      success: true,
-      message: "Users retrieved successfully",
+    sendSuccessResponse(res, STATUS_CODES.OK, MESSAGES.USERS_RETRIEVED, {
       count: users.length,
-      data: users,
+      users,
     });
     return;
   } catch (error) {
     console.error("Get users error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Internal server error while fetching users",
-    });
+    sendErrorResponse(
+      res,
+      STATUS_CODES.INTERNAL_SERVER_ERROR,
+      MESSAGES.INTERNAL_SERVER_ERROR
+    );
     return;
   }
 };
@@ -342,25 +392,19 @@ export const getUserById = async (
 
     const user = await User.findById(id).select("-__v");
     if (!user) {
-      res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
+      sendErrorResponse(res, STATUS_CODES.NOT_FOUND, MESSAGES.USER_NOT_FOUND);
       return;
     }
 
-    res.status(200).json({
-      success: true,
-      message: "User retrieved successfully",
-      data: user,
-    });
+    sendSuccessResponse(res, STATUS_CODES.OK, MESSAGES.USER_RETRIEVED, user);
     return;
   } catch (error) {
     console.error("Get user by ID error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Internal server error while fetching user",
-    });
+    sendErrorResponse(
+      res,
+      STATUS_CODES.INTERNAL_SERVER_ERROR,
+      MESSAGES.INTERNAL_SERVER_ERROR
+    );
     return;
   }
 };
@@ -375,20 +419,18 @@ export const updateUser = async (
 
     const existingUser = await User.findById(id);
     if (!existingUser) {
-      res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
+      sendErrorResponse(res, STATUS_CODES.NOT_FOUND, MESSAGES.USER_NOT_FOUND);
       return;
     }
 
     if (email && email !== existingUser.email) {
       const emailExists = await User.findOne({ email });
       if (emailExists) {
-        res.status(400).json({
-          success: false,
-          message: "Email already exists",
-        });
+        sendErrorResponse(
+          res,
+          STATUS_CODES.CONFLICT,
+          MESSAGES.EMAIL_ALREADY_EXISTS
+        );
         return;
       }
     }
@@ -403,18 +445,20 @@ export const updateUser = async (
       { new: true, runValidators: true }
     ).select("-__v");
 
-    res.status(200).json({
-      success: true,
-      message: "User updated successfully",
-      data: updatedUser,
-    });
+    sendSuccessResponse(
+      res,
+      STATUS_CODES.OK,
+      MESSAGES.USER_UPDATED,
+      updatedUser
+    );
     return;
   } catch (error) {
     console.error("Update user error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Internal server error while updating user",
-    });
+    sendErrorResponse(
+      res,
+      STATUS_CODES.INTERNAL_SERVER_ERROR,
+      MESSAGES.INTERNAL_SERVER_ERROR
+    );
     return;
   }
 };
@@ -428,24 +472,19 @@ export const deleteUser = async (
 
     const user = await User.findByIdAndDelete(id);
     if (!user) {
-      res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
+      sendErrorResponse(res, STATUS_CODES.NOT_FOUND, MESSAGES.USER_NOT_FOUND);
       return;
     }
 
-    res.status(200).json({
-      success: true,
-      message: "User deleted successfully",
-    });
+    sendSuccessResponse(res, STATUS_CODES.OK, MESSAGES.USER_DELETED);
     return;
   } catch (error) {
     console.error("Delete user error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Internal server error while deleting user",
-    });
+    sendErrorResponse(
+      res,
+      STATUS_CODES.INTERNAL_SERVER_ERROR,
+      MESSAGES.INTERNAL_SERVER_ERROR
+    );
     return;
   }
 };
@@ -458,28 +497,29 @@ export const getUsersByRole = async (
     const { role } = req.params;
 
     if (!Object.values(UserRole).includes(role as UserRole)) {
-      res.status(400).json({
-        success: false,
-        message: "Invalid role. Must be 'owner', 'host', or 'traveller'",
-      });
+      sendErrorResponse(res, STATUS_CODES.BAD_REQUEST, MESSAGES.INVALID_ROLE);
       return;
     }
 
     const users = await User.find({ userRole: role }).select("-__v");
 
-    res.status(200).json({
-      success: true,
-      message: `Users with role '${role}' retrieved successfully`,
-      count: users.length,
-      data: users,
-    });
+    sendSuccessResponse(
+      res,
+      STATUS_CODES.OK,
+      `Users with role '${role}' retrieved successfully`,
+      {
+        count: users.length,
+        users,
+      }
+    );
     return;
   } catch (error) {
     console.error("Get users by role error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Internal server error while fetching users by role",
-    });
+    sendErrorResponse(
+      res,
+      STATUS_CODES.INTERNAL_SERVER_ERROR,
+      MESSAGES.INTERNAL_SERVER_ERROR
+    );
     return;
   }
 };
@@ -492,34 +532,34 @@ export const getUserProfile = async (
     const { userId } = req.body;
 
     if (!userId) {
-      res.status(400).json({
-        success: false,
-        message: "User ID is required",
-      });
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        MESSAGES.USER_ID_REQUIRED
+      );
       return;
     }
 
     const user = await User.findById(userId).select("-__v");
     if (!user) {
-      res.status(404).json({
-        success: false,
-        message: "User not found",
-      });
+      sendErrorResponse(res, STATUS_CODES.NOT_FOUND, MESSAGES.USER_NOT_FOUND);
       return;
     }
 
-    res.status(200).json({
-      success: true,
-      message: "User profile retrieved successfully",
-      data: user,
-    });
+    sendSuccessResponse(
+      res,
+      STATUS_CODES.OK,
+      MESSAGES.USER_PROFILE_RETRIEVED,
+      user
+    );
     return;
   } catch (error) {
     console.error("Get user profile error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Internal server error while fetching user profile",
-    });
+    sendErrorResponse(
+      res,
+      STATUS_CODES.INTERNAL_SERVER_ERROR,
+      MESSAGES.INTERNAL_SERVER_ERROR
+    );
     return;
   }
 };

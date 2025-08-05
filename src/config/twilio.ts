@@ -1,7 +1,9 @@
 import twilio from "twilio";
 
-const accountSid = process.env.TWILIO_ACCOUNT_SID;
-const authToken = process.env.TWILIO_AUTH_TOKEN;
+const accountSid =
+  process.env.TWILIO_ACCOUNT_SID || "AC3656d1bb791183d64aadd6f23c7ae11d";
+const authToken =
+  process.env.TWILIO_AUTH_TOKEN || "74099fc5ed9cfd2387efbcbf5c9d02fd";
 
 if (!accountSid || !authToken) {
   throw new Error(

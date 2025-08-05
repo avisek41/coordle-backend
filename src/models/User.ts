@@ -15,6 +15,7 @@ export interface IUser extends Document {
   phoneNumber: string;
   isPhoneVerified: boolean;
   isEmailVerified: boolean;
+  isProfileSetup: boolean;
   userRole: UserRole;
   createdAt: Date;
   updatedAt: Date;
@@ -48,8 +49,9 @@ const userSchema = new Schema<IUser>(
     },
     phoneNumber: {
       type: String,
-      required: [true, "Phone number is required"],
+      required: false, // Optional for email-based registration
       unique: true,
+      sparse: true, // Allow multiple null values
       trim: true,
     },
     isPhoneVerified: {
@@ -57,6 +59,10 @@ const userSchema = new Schema<IUser>(
       default: false,
     },
     isEmailVerified: {
+      type: Boolean,
+      default: false,
+    },
+    isProfileSetup: {
       type: Boolean,
       default: false,
     },
