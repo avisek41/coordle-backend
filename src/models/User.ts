@@ -9,9 +9,12 @@ export enum UserRole {
 
 // Define the User interface
 export interface IUser extends Document {
-  name: string;
-  email: string;
-  password: string;
+  name?: string; // Optional for phone-based registration
+  email?: string; // Optional for phone-based registration
+  password?: string; // Optional for phone-based registration
+  phoneNumber: string;
+  isPhoneVerified: boolean;
+  isEmailVerified: boolean;
   userRole: UserRole;
   createdAt: Date;
   updatedAt: Date;
@@ -22,14 +25,15 @@ const userSchema = new Schema<IUser>(
   {
     name: {
       type: String,
-      required: [true, "Name is required"],
+      required: false, // Optional for phone-based registration
       trim: true,
       maxlength: [100, "Name cannot be more than 100 characters"],
     },
     email: {
       type: String,
-      required: [true, "Email is required"],
+      required: false, // Optional for phone-based registration
       unique: true,
+      sparse: true, // Allow multiple null values
       lowercase: true,
       trim: true,
       match: [
@@ -39,8 +43,22 @@ const userSchema = new Schema<IUser>(
     },
     password: {
       type: String,
-      required: [true, "Password is required"],
+      required: false, // Optional for phone-based registration
       minlength: [6, "Password must be at least 6 characters long"],
+    },
+    phoneNumber: {
+      type: String,
+      required: [true, "Phone number is required"],
+      unique: true,
+      trim: true,
+    },
+    isPhoneVerified: {
+      type: Boolean,
+      default: false,
+    },
+    isEmailVerified: {
+      type: Boolean,
+      default: false,
     },
     userRole: {
       type: String,
@@ -59,6 +77,7 @@ const userSchema = new Schema<IUser>(
 
 // Create indexes for better query performance
 userSchema.index({ email: 1 });
+userSchema.index({ phoneNumber: 1 });
 userSchema.index({ userRole: 1 });
 
 // Create and export the User model

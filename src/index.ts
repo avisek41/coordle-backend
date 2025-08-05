@@ -5,6 +5,7 @@ import morgan from "morgan";
 import dotenv from "dotenv";
 import connectDB from "./config/db";
 import userRoutes from "./routes/userRoutes";
+import verificationRoutes from "./routes/verificationRoutes";
 
 // Load environment variables
 dotenv.config();
@@ -34,6 +35,7 @@ app.get("/health", (req: Request, res: Response) => {
 
 // API Routes
 app.use("/api/users", userRoutes);
+app.use("/api/verification", verificationRoutes);
 
 // Root endpoint
 app.get("/", (req: Request, res: Response) => {
@@ -43,6 +45,7 @@ app.get("/", (req: Request, res: Response) => {
     endpoints: {
       health: "/health",
       users: "/api/users",
+      verification: "/api/verification",
     },
   });
 });
