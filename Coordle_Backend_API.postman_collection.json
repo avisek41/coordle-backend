@@ -1,0 +1,606 @@
+{
+  "info": {
+    "name": "Coordle Backend API",
+    "description": "Complete API collection for Coordle backend including user management, authentication, verification, and profile options",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "authToken",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{authToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Health Check",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Register User (Email)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"password123\",\n  \"confirmPassword\": \"password123\",\n  \"userRole\": \"traveller\",\n  \"registrationMethod\": \"email\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/users/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "register"]
+            }
+          }
+        },
+        {
+          "name": "Register User (Phone)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phoneNumber\": \"+1234567890\",\n  \"userRole\": \"traveller\",\n  \"registrationMethod\": \"phone\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/users/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "register"]
+            }
+          }
+        },
+        {
+          "name": "Login User (Email)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"password123\",\n  \"loginMethod\": \"email\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/users/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "login"]
+            }
+          }
+        },
+        {
+          "name": "Login User (Phone)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phoneNumber\": \"+1234567890\",\n  \"verificationCode\": \"123456\",\n  \"loginMethod\": \"phone\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/users/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "login"]
+            }
+          }
+        },
+        {
+          "name": "Send Login Verification Code",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phoneNumber\": \"+1234567890\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/users/send-login-code",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "send-login-code"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Password Reset",
+      "item": [
+        {
+          "name": "Request Password Reset",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/users/forgot-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "forgot-password"]
+            }
+          }
+        },
+        {
+          "name": "Forget Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/users/forget-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "forget-password"]
+            }
+          }
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"reset_token_here\",\n  \"newPassword\": \"newpassword123\",\n  \"confirmPassword\": \"newpassword123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/users/reset-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "reset-password"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Phone Verification",
+      "item": [
+        {
+          "name": "Send Verification Code",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phoneNumber\": \"+1234567890\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/verification/send-code",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "verification", "send-code"]
+            }
+          }
+        },
+        {
+          "name": "Verify Phone Number",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phoneNumber\": \"+1234567890\",\n  \"code\": \"123456\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/verification/verify",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "verification", "verify"]
+            }
+          }
+        },
+        {
+          "name": "Resend Verification Code",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phoneNumber\": \"+1234567890\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/verification/resend-code",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "verification", "resend-code"]
+            }
+          }
+        },
+        {
+          "name": "Register User After Verification",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phoneNumber\": \"+1234567890\",\n  \"userRole\": \"traveller\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/verification/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "verification", "register"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Email Verification",
+      "item": [
+        {
+          "name": "Send Email Verification Link",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/verification/send-email-link",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "verification", "send-email-link"]
+            }
+          }
+        },
+        {
+          "name": "Verify Email Address",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"email_verification_token_here\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/verification/verify-email",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "verification", "verify-email"]
+            }
+          }
+        },
+        {
+          "name": "Resend Email Verification Link",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/verification/resend-email-link",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "verification", "resend-email-link"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "User Management",
+      "item": [
+        {
+          "name": "Get All Users",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/users",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users"]
+            }
+          }
+        },
+        {
+          "name": "Get User by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/64f1a2b3c4d5e6f7g8h9i0j1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "64f1a2b3c4d5e6f7g8h9i0j1"]
+            }
+          }
+        },
+        {
+          "name": "Update User",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"email\": \"john.doe@example.com\",\n  \"phoneNumber\": \"+1234567890\",\n  \"userRole\": \"traveller\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/users/64f1a2b3c4d5e6f7g8h9i0j1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "64f1a2b3c4d5e6f7g8h9i0j1"]
+            }
+          }
+        },
+        {
+          "name": "Delete User",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/64f1a2b3c4d5e6f7g8h9i0j1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "64f1a2b3c4d5e6f7g8h9i0j1"]
+            }
+          }
+        },
+        {
+          "name": "Get Users by Role",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/role/traveller",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "role", "traveller"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "User Profile",
+      "item": [
+        {
+          "name": "Get User Profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "profile"]
+            }
+          }
+        },
+        {
+          "name": "Get Current User Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "me"]
+            }
+          }
+        },
+        {
+          "name": "Setup Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"preferredName\": \"Johnny\",\n  \"phoneNumber\": \"+1234567890\",\n  \"pronouns\": \"He/Him\",\n  \"country\": \"United States\",\n  \"state\": \"California\",\n  \"postalCode\": \"90210\",\n  \"preferredAirport\": \"LAX\",\n  \"racialEthnic\": \"Asian\",\n  \"ageDemographic\": \"25-34\",\n  \"foodAllergies\": [\"Peanuts\", \"Tree Nuts\"],\n  \"dietaryRestrictions\": \"Vegetarian\",\n  \"genderIdentity\": \"Man\",\n  \"sexualOrientation\": \"Straight\",\n  \"disabilityStatus\": \"No disability\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/users/setup-profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "setup-profile"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Profile Options",
+      "item": [
+        {
+          "name": "Get All Profile Options",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/profile-options",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "profile-options"]
+            }
+          }
+        },
+        {
+          "name": "Get Profile Options by Category",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/profile-options?category=pronouns",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "profile-options"],
+              "query": [
+                {
+                  "key": "category",
+                  "value": "pronouns"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Create Profile Options",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category\": \"newCategory\",\n  \"options\": [\"Option 1\", \"Option 2\", \"Option 3\"],\n  \"displayOrder\": 9\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/profile-options",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "profile-options"]
+            }
+          }
+        },
+        {
+          "name": "Update Profile Options",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"options\": [\"Updated Option 1\", \"Updated Option 2\", \"Updated Option 3\"],\n  \"displayOrder\": 2,\n  \"isActive\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/profile-options/pronouns",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "profile-options", "pronouns"]
+            }
+          }
+        },
+        {
+          "name": "Delete Profile Options",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/profile-options/pronouns",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "profile-options", "pronouns"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

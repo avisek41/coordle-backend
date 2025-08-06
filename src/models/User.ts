@@ -18,6 +18,24 @@ export interface IUser extends Document {
   isEmailVerified: boolean;
   isProfileSetup: boolean;
   userRole: UserRole;
+
+  // Profile fields (all optional)
+  firstName?: string;
+  lastName?: string;
+  preferredName?: string;
+  pronouns?: string;
+  country?: string;
+  state?: string;
+  postalCode?: string;
+  preferredAirport?: string;
+  racialEthnic?: string;
+  ageDemographic?: string;
+  foodAllergies?: string[];
+  dietaryRestrictions?: string;
+  genderIdentity?: string;
+  sexualOrientation?: string;
+  disabilityStatus?: string;
+
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -76,6 +94,103 @@ const userSchema = new Schema<IUser>(
       },
       required: [true, "User role is required"],
       default: UserRole.TRAVELLER,
+    },
+
+    // Profile fields (all optional)
+    firstName: {
+      type: String,
+      required: false,
+      trim: true,
+      maxlength: [50, "First name cannot be more than 50 characters"],
+    },
+    lastName: {
+      type: String,
+      required: false,
+      trim: true,
+      maxlength: [50, "Last name cannot be more than 50 characters"],
+    },
+    preferredName: {
+      type: String,
+      required: false,
+      trim: true,
+      maxlength: [50, "Preferred name cannot be more than 50 characters"],
+    },
+    pronouns: {
+      type: String,
+      required: false,
+      trim: true,
+      maxlength: [20, "Pronouns cannot be more than 20 characters"],
+    },
+    country: {
+      type: String,
+      required: false,
+      trim: true,
+      maxlength: [50, "Country cannot be more than 50 characters"],
+    },
+    state: {
+      type: String,
+      required: false,
+      trim: true,
+      maxlength: [50, "State cannot be more than 50 characters"],
+    },
+    postalCode: {
+      type: String,
+      required: false,
+      trim: true,
+      maxlength: [20, "Postal code cannot be more than 20 characters"],
+    },
+    preferredAirport: {
+      type: String,
+      required: false,
+      trim: true,
+      maxlength: [10, "Preferred airport cannot be more than 10 characters"],
+    },
+    racialEthnic: {
+      type: String,
+      required: false,
+      trim: true,
+      maxlength: [
+        100,
+        "Racial/ethnic background cannot be more than 100 characters",
+      ],
+    },
+    ageDemographic: {
+      type: String,
+      required: false,
+      trim: true,
+      maxlength: [50, "Age demographic cannot be more than 50 characters"],
+    },
+    foodAllergies: {
+      type: [String],
+      required: false,
+      default: [],
+    },
+    dietaryRestrictions: {
+      type: String,
+      required: false,
+      trim: true,
+      maxlength: [
+        200,
+        "Dietary restrictions cannot be more than 200 characters",
+      ],
+    },
+    genderIdentity: {
+      type: String,
+      required: false,
+      trim: true,
+      maxlength: [50, "Gender identity cannot be more than 50 characters"],
+    },
+    sexualOrientation: {
+      type: String,
+      required: false,
+      trim: true,
+      maxlength: [50, "Sexual orientation cannot be more than 50 characters"],
+    },
+    disabilityStatus: {
+      type: String,
+      required: false,
+      trim: true,
+      maxlength: [50, "Disability status cannot be more than 50 characters"],
     },
   },
   {

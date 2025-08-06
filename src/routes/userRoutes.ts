@@ -13,6 +13,7 @@ import {
   requestPasswordReset,
   resetPassword,
   forgetPassword,
+  setupProfile,
 } from "../controllers/userController";
 import { authenticateToken } from "../middleware/auth";
 
@@ -31,6 +32,7 @@ router.post("/reset-password", resetPassword);
 // User profile routes
 router.get("/profile", getUserProfile);
 router.get("/me", authenticateToken, getCurrentUserProfile);
+router.put("/setup-profile", authenticateToken, setupProfile);
 
 // User management routes
 router.get("/", getAllUsers);

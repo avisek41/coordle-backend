@@ -8,3 +8,4 @@ export {
   default as EmailVerificationLink,
   type IEmailVerificationLink,
 } from "./EmailVerificationLink";
+export { default as ProfileOptions, type IProfileOptions } from "./ProfileOptions";

@@ -903,3 +903,111 @@ export const forgetPassword = async (
     );
   }
 };
+
+// Setup user profile
+export const setupProfile = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    // Check if user is authenticated
+    if (!req.user) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.UNAUTHORIZED,
+        "Authentication required"
+      );
+      return;
+    }
+
+    const {
+      firstName,
+      lastName,
+      preferredName,
+      phoneNumber,
+      pronouns,
+      country,
+      state,
+      postalCode,
+      preferredAirport,
+      racialEthnic,
+      ageDemographic,
+      foodAllergies,
+      dietaryRestrictions,
+      genderIdentity,
+      sexualOrientation,
+      disabilityStatus,
+    } = req.body;
+
+    // Find user by ID from JWT token
+    const user = await User.findById(req.user.userId);
+    if (!user) {
+      sendErrorResponse(res, STATUS_CODES.NOT_FOUND, MESSAGES.USER_NOT_FOUND);
+      return;
+    }
+
+    // Check if phone number is being updated and if it's already taken by another user
+    if (phoneNumber && phoneNumber !== user.phoneNumber) {
+      const existingUserWithPhone = await User.findOne({ 
+        phoneNumber, 
+        _id: { $ne: user._id } 
+      });
+      if (existingUserWithPhone) {
+        sendErrorResponse(
+          res,
+          STATUS_CODES.CONFLICT,
+          "Phone number is already registered with another account"
+        );
+        return;
+      }
+    }
+
+    // Update user profile with provided fields (all optional)
+    const updateData: any = {};
+    
+    if (firstName !== undefined) updateData.firstName = firstName;
+    if (lastName !== undefined) updateData.lastName = lastName;
+    if (preferredName !== undefined) updateData.preferredName = preferredName;
+    if (phoneNumber !== undefined) updateData.phoneNumber = phoneNumber;
+    if (pronouns !== undefined) updateData.pronouns = pronouns;
+    if (country !== undefined) updateData.country = country;
+    if (state !== undefined) updateData.state = state;
+    if (postalCode !== undefined) updateData.postalCode = postalCode;
+    if (preferredAirport !== undefined) updateData.preferredAirport = preferredAirport;
+    if (racialEthnic !== undefined) updateData.racialEthnic = racialEthnic;
+    if (ageDemographic !== undefined) updateData.ageDemographic = ageDemographic;
+    if (foodAllergies !== undefined) updateData.foodAllergies = foodAllergies;
+    if (dietaryRestrictions !== undefined) updateData.dietaryRestrictions = dietaryRestrictions;
+    if (genderIdentity !== undefined) updateData.genderIdentity = genderIdentity;
+    if (sexualOrientation !== undefined) updateData.sexualOrientation = sexualOrientation;
+    if (disabilityStatus !== undefined) updateData.disabilityStatus = disabilityStatus;
+
+    // Mark profile as setup if any field was provided
+    if (Object.keys(updateData).length > 0) {
+      updateData.isProfileSetup = true;
+    }
+
+    // Update user
+    const updatedUser = await User.findByIdAndUpdate(
+      user._id,
+      updateData,
+      { new: true, runValidators: true }
+    ).select("-__v -password");
+
+    sendSuccessResponse(
+      res,
+      STATUS_CODES.OK,
+      "Profile updated successfully",
+      updatedUser
+    );
+    return;
+  } catch (error) {
+    console.error("Setup profile error:", error);
+    sendErrorResponse(
+      res,
+      STATUS_CODES.INTERNAL_SERVER_ERROR,
+      MESSAGES.INTERNAL_SERVER_ERROR
+    );
+    return;
+  }
+};
