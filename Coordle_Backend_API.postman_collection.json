@@ -179,27 +179,7 @@
             }
           }
         },
-        {
-          "name": "Forget Password",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"user@example.com\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/users/forget-password",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "users", "forget-password"]
-            }
-          }
-        },
+
         {
           "name": "Reset Password",
           "request": {

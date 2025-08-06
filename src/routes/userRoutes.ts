@@ -12,7 +12,6 @@ import {
   getCurrentUserProfile,
   requestPasswordReset,
   resetPassword,
-  forgetPassword,
   setupProfile,
 } from "../controllers/userController";
 import { authenticateToken } from "../middleware/auth";
@@ -26,7 +25,6 @@ router.post("/send-login-code", sendLoginVerificationCode);
 
 // Password reset routes
 router.post("/forgot-password", requestPasswordReset);
-router.post("/forget-password", forgetPassword);
 router.post("/reset-password", resetPassword);
 
 // User profile routes
