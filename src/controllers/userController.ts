@@ -948,9 +948,9 @@ export const setupProfile = async (
 
     // Check if phone number is being updated and if it's already taken by another user
     if (phoneNumber && phoneNumber !== user.phoneNumber) {
-      const existingUserWithPhone = await User.findOne({ 
-        phoneNumber, 
-        _id: { $ne: user._id } 
+      const existingUserWithPhone = await User.findOne({
+        phoneNumber,
+        _id: { $ne: user._id },
       });
       if (existingUserWithPhone) {
         sendErrorResponse(
@@ -964,7 +964,7 @@ export const setupProfile = async (
 
     // Update user profile with provided fields (all optional)
     const updateData: any = {};
-    
+
     if (firstName !== undefined) updateData.firstName = firstName;
     if (lastName !== undefined) updateData.lastName = lastName;
     if (preferredName !== undefined) updateData.preferredName = preferredName;
@@ -973,14 +973,20 @@ export const setupProfile = async (
     if (country !== undefined) updateData.country = country;
     if (state !== undefined) updateData.state = state;
     if (postalCode !== undefined) updateData.postalCode = postalCode;
-    if (preferredAirport !== undefined) updateData.preferredAirport = preferredAirport;
+    if (preferredAirport !== undefined)
+      updateData.preferredAirport = preferredAirport;
     if (racialEthnic !== undefined) updateData.racialEthnic = racialEthnic;
-    if (ageDemographic !== undefined) updateData.ageDemographic = ageDemographic;
+    if (ageDemographic !== undefined)
+      updateData.ageDemographic = ageDemographic;
     if (foodAllergies !== undefined) updateData.foodAllergies = foodAllergies;
-    if (dietaryRestrictions !== undefined) updateData.dietaryRestrictions = dietaryRestrictions;
-    if (genderIdentity !== undefined) updateData.genderIdentity = genderIdentity;
-    if (sexualOrientation !== undefined) updateData.sexualOrientation = sexualOrientation;
-    if (disabilityStatus !== undefined) updateData.disabilityStatus = disabilityStatus;
+    if (dietaryRestrictions !== undefined)
+      updateData.dietaryRestrictions = dietaryRestrictions;
+    if (genderIdentity !== undefined)
+      updateData.genderIdentity = genderIdentity;
+    if (sexualOrientation !== undefined)
+      updateData.sexualOrientation = sexualOrientation;
+    if (disabilityStatus !== undefined)
+      updateData.disabilityStatus = disabilityStatus;
 
     // Mark profile as setup if any field was provided
     if (Object.keys(updateData).length > 0) {
@@ -988,11 +994,10 @@ export const setupProfile = async (
     }
 
     // Update user
-    const updatedUser = await User.findByIdAndUpdate(
-      user._id,
-      updateData,
-      { new: true, runValidators: true }
-    ).select("-__v -password");
+    const updatedUser = await User.findByIdAndUpdate(user._id, updateData, {
+      new: true,
+      runValidators: true,
+    }).select("-__v -password");
 
     sendSuccessResponse(
       res,
@@ -1009,5 +1014,59 @@ export const setupProfile = async (
       MESSAGES.INTERNAL_SERVER_ERROR
     );
     return;
+  }
+};
+
+// Check email verification status and redirect accordingly
+export const checkEmailVerificationStatus = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      sendErrorResponse(res, STATUS_CODES.BAD_REQUEST, "Email is required");
+      return;
+    }
+
+    // Find user by email
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      // User doesn't exist, send to registration
+      sendSuccessResponse(res, STATUS_CODES.OK, "User not found", {
+        action: "register",
+        message: "Please register with this email",
+      });
+      return;
+    }
+
+    // Check email verification status
+    if (!user.isEmailVerified) {
+      // Email not verified, send to verification screen
+      sendSuccessResponse(res, STATUS_CODES.OK, "Email not verified", {
+        action: "verify_email",
+        message: "Please verify your email address",
+        email: user.email,
+        userId: user._id,
+      });
+      return;
+    }
+
+    // Email is verified, send to login screen
+    sendSuccessResponse(res, STATUS_CODES.OK, "Email verified", {
+      action: "login",
+      message: "Please login with your password",
+      email: user.email,
+      userId: user._id,
+    });
+  } catch (error) {
+    console.error("Check email verification status error:", error);
+    sendErrorResponse(
+      res,
+      STATUS_CODES.INTERNAL_SERVER_ERROR,
+      MESSAGES.INTERNAL_SERVER_ERROR
+    );
   }
 };

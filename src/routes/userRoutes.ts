@@ -13,6 +13,7 @@ import {
   requestPasswordReset,
   resetPassword,
   setupProfile,
+  checkEmailVerificationStatus,
 } from "../controllers/userController";
 import { authenticateToken } from "../middleware/auth";
 
@@ -22,6 +23,7 @@ const router = Router();
 router.post("/register", registerUser);
 router.post("/login", loginUser);
 router.post("/send-login-code", sendLoginVerificationCode);
+router.post("/check-email-status", checkEmailVerificationStatus);
 
 // Password reset routes
 router.post("/forgot-password", requestPasswordReset);

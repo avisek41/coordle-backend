@@ -152,6 +152,27 @@
               "path": ["api", "users", "send-login-code"]
             }
           }
+        },
+        {
+          "name": "Check Email Verification Status",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/users/check-email-status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "check-email-status"]
+            }
+          }
         }
       ]
     },
