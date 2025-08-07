@@ -133,7 +133,7 @@
           }
         },
         {
-          "name": "Send Login Verification Code",
+          "name": "Send Login Verification Code (For Existing Users)",
           "request": {
             "method": "POST",
             "header": [
@@ -151,7 +151,8 @@
               "host": ["{{baseUrl}}"],
               "path": ["api", "users", "send-login-code"]
             }
-          }
+          },
+          "description": "Use this endpoint for existing users who want to login with phone verification. This endpoint requires the user to already exist in the database."
         },
         {
           "name": "Check Email Verification Status",
@@ -173,6 +174,28 @@
               "path": ["api", "users", "check-email-status"]
             }
           }
+        },
+        {
+          "name": "Check User by Phone Number",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phoneNumber\": \"+918637222653\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/users/check-user-by-phone",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "check-user-by-phone"]
+            }
+          },
+          "description": "Check if a user exists by phone number. This helps determine whether to use registration or login flow."
         }
       ]
     },
@@ -228,7 +251,7 @@
       "name": "Phone Verification",
       "item": [
         {
-          "name": "Send Verification Code",
+          "name": "Send Verification Code (For New User Registration)",
           "request": {
             "method": "POST",
             "header": [
@@ -246,7 +269,8 @@
               "host": ["{{baseUrl}}"],
               "path": ["api", "verification", "send-code"]
             }
-          }
+          },
+          "description": "Use this endpoint for new user registration. This endpoint will block if the phone number is already verified for another user."
         },
         {
           "name": "Verify Phone Number",
@@ -349,7 +373,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"token\": \"email_verification_token_here\"\n}"
+              "raw": "{\n  \"token\": \"email_verification_token_here\",\n  \"email\": \"user@example.com\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/verification/verify-email",

@@ -14,6 +14,7 @@ import {
   resetPassword,
   setupProfile,
   checkEmailVerificationStatus,
+  checkUserByPhone,
 } from "../controllers/userController";
 import { authenticateToken } from "../middleware/auth";
 
@@ -24,6 +25,7 @@ router.post("/register", registerUser);
 router.post("/login", loginUser);
 router.post("/send-login-code", sendLoginVerificationCode);
 router.post("/check-email-status", checkEmailVerificationStatus);
+router.post("/check-user-by-phone", checkUserByPhone);
 
 // Password reset routes
 router.post("/forgot-password", requestPasswordReset);

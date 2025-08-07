@@ -1070,3 +1070,57 @@ export const checkEmailVerificationStatus = async (
     );
   }
 };
+
+// Check if user exists by phone number
+export const checkUserByPhone = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { phoneNumber } = req.body;
+
+    if (!phoneNumber) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        "Phone number is required"
+      );
+      return;
+    }
+
+    // Check if user exists
+    const user = await User.findOne({ phoneNumber });
+
+    if (!user) {
+      sendSuccessResponse(res, STATUS_CODES.OK, "User not found", {
+        exists: false,
+        action: "register",
+        message: "User does not exist. Please use registration flow.",
+      });
+      return;
+    }
+
+    // User exists, return user info
+    sendSuccessResponse(res, STATUS_CODES.OK, "User found", {
+      exists: true,
+      action: "login",
+      message: "User exists. Please use login flow.",
+      user: {
+        id: user._id,
+        name: user.name,
+        phoneNumber: user.phoneNumber,
+        isPhoneVerified: user.isPhoneVerified,
+        isEmailVerified: user.isEmailVerified,
+        isProfileSetup: user.isProfileSetup,
+        userRole: user.userRole,
+      },
+    });
+  } catch (error) {
+    console.error("Check user by phone error:", error);
+    sendErrorResponse(
+      res,
+      STATUS_CODES.INTERNAL_SERVER_ERROR,
+      MESSAGES.INTERNAL_SERVER_ERROR
+    );
+  }
+};
