@@ -275,6 +275,7 @@ export const registerUserAfterVerification = async (
           phoneNumber: existingUser.phoneNumber,
           isPhoneVerified: existingUser.isPhoneVerified,
           isEmailVerified: existingUser.isEmailVerified,
+          isProfileSetup: existingUser.isProfileSetup || false,
           userRole: existingUser.userRole,
         },
       },
