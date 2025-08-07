@@ -5,6 +5,7 @@ import {
   sendEmailVerificationLink as sendEmailVerificationLinkEmail,
   generateEmailVerificationToken,
 } from "../config/email";
+import { generateToken } from "../config/jwt";
 
 // Generate a random 6-digit code
 const generateVerificationCode = (): string => {
@@ -266,6 +267,13 @@ export const registerUserAfterVerification = async (
     // Keep email verification status as is (false for phone-only registration)
     await existingUser.save();
 
+    // Generate JWT token
+    const token = generateToken({
+      userId: (existingUser._id as any).toString(),
+      phoneNumber: existingUser.phoneNumber || undefined,
+      userRole: existingUser.userRole,
+    });
+
     res.status(201).json({
       success: true,
       message: "User registered successfully",
@@ -279,6 +287,7 @@ export const registerUserAfterVerification = async (
           isProfileSetup: existingUser.isProfileSetup || false,
           userRole: existingUser.userRole,
         },
+        token,
       },
     });
   } catch (error) {
