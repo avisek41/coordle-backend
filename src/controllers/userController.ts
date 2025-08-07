@@ -106,7 +106,7 @@ export const registerUser = async (
         password, // Hash in real app
         userRole: userRole || UserRole.TRAVELLER,
         isPhoneVerified: false,
-        isEmailVerified: true, // Email is verified since they registered with email
+        isEmailVerified: false, // Email needs to be verified after registration
       });
 
       const savedUser = await newUser.save();
