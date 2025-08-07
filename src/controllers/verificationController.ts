@@ -143,6 +143,7 @@ export const verifyPhoneNumber = async (
         phoneNumber,
         isPhoneVerified: true,
         isEmailVerified: user.isEmailVerified,
+        isProfileSetup: user.isProfileSetup || false,
         userId: user._id,
       },
     });
