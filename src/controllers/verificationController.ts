@@ -137,6 +137,13 @@ export const verifyPhoneNumber = async (
       await user.save();
     }
 
+    // Generate JWT token
+    const token = generateToken({
+      userId: (user._id as any).toString(),
+      phoneNumber: user.phoneNumber || undefined,
+      userRole: user.userRole,
+    });
+
     res.status(200).json({
       success: true,
       message: "Phone number verified successfully",
@@ -146,6 +153,7 @@ export const verifyPhoneNumber = async (
         isEmailVerified: user.isEmailVerified,
         isProfileSetup: user.isProfileSetup || false,
         userId: user._id,
+        token,
       },
     });
   } catch (error) {
@@ -267,13 +275,6 @@ export const registerUserAfterVerification = async (
     // Keep email verification status as is (false for phone-only registration)
     await existingUser.save();
 
-    // Generate JWT token
-    const token = generateToken({
-      userId: (existingUser._id as any).toString(),
-      phoneNumber: existingUser.phoneNumber || undefined,
-      userRole: existingUser.userRole,
-    });
-
     res.status(201).json({
       success: true,
       message: "User registered successfully",
@@ -287,7 +288,6 @@ export const registerUserAfterVerification = async (
           isProfileSetup: existingUser.isProfileSetup || false,
           userRole: existingUser.userRole,
         },
-        token,
       },
     });
   } catch (error) {
