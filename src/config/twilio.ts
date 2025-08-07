@@ -3,7 +3,7 @@ import twilio from "twilio";
 const accountSid =
   process.env.TWILIO_ACCOUNT_SID || "AC3656d1bb791183d64aadd6f23c7ae11d";
 const authToken =
-  process.env.TWILIO_AUTH_TOKEN || "74099fc5ed9cfd2387efbcbf5c9d02fd";
+  process.env.TWILIO_AUTH_TOKEN || "88b87efd78cb68bb71f34da67e767c45";
 
 if (!accountSid || !authToken) {
   throw new Error(
@@ -18,7 +18,7 @@ export const sendVerificationCode = async (
   code: string
 ): Promise<boolean> => {
   try {
-    const fromNumber = process.env.TWILIO_PHONE_NUMBER;
+    const fromNumber = process.env.TWILIO_PHONE_NUMBER || "+17817982578";
     if (!fromNumber) {
       throw new Error("TWILIO_PHONE_NUMBER environment variable not set");
     }
