@@ -7,6 +7,7 @@ import connectDB from "./config/db";
 import userRoutes from "./routes/userRoutes";
 import verificationRoutes from "./routes/verificationRoutes";
 import profileOptionsRoutes from "./routes/profileOptionsRoutes";
+import profilePhotoRoutes from "./routes/profilePhotoRoutes";
 
 // Load environment variables
 dotenv.config();
@@ -38,6 +39,7 @@ app.get("/health", (req: Request, res: Response) => {
 app.use("/api/users", userRoutes);
 app.use("/api/verification", verificationRoutes);
 app.use("/api/profile-options", profileOptionsRoutes);
+app.use("/api/profile-photo", profilePhotoRoutes);
 
 // Root endpoint
 app.get("/", (req: Request, res: Response) => {
@@ -49,6 +51,7 @@ app.get("/", (req: Request, res: Response) => {
       users: "/api/users",
       verification: "/api/verification",
       profileOptions: "/api/profile-options",
+      profilePhoto: "/api/profile-photo",
     },
   });
 });

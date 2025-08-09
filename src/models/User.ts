@@ -36,6 +36,18 @@ export interface IUser extends Document {
   sexualOrientation?: string;
   disabilityStatus?: string;
 
+  // Profile photo fields
+  profilePhoto?: {
+    url: string;
+    publicId: string;
+    thumbnailUrl: string;
+    width: number;
+    height: number;
+    format: string;
+    bytes: number;
+    uploadedAt: Date;
+  };
+
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -191,6 +203,43 @@ const userSchema = new Schema<IUser>(
       required: false,
       trim: true,
       maxlength: [50, "Disability status cannot be more than 50 characters"],
+    },
+
+    // Profile photo fields
+    profilePhoto: {
+      url: {
+        type: String,
+        required: false,
+      },
+      publicId: {
+        type: String,
+        required: false,
+      },
+      thumbnailUrl: {
+        type: String,
+        required: false,
+      },
+      width: {
+        type: Number,
+        required: false,
+      },
+      height: {
+        type: Number,
+        required: false,
+      },
+      format: {
+        type: String,
+        required: false,
+      },
+      bytes: {
+        type: Number,
+        required: false,
+      },
+      uploadedAt: {
+        type: Date,
+        required: false,
+        default: Date.now,
+      },
     },
   },
   {

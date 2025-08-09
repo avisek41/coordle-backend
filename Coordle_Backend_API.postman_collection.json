@@ -626,6 +626,563 @@
           }
         }
       ]
+    },
+    {
+      "name": "User Profile Image",
+      "item": [
+        {
+          "name": "Upload Profile Image",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "profileImage",
+                  "type": "file",
+                  "src": ""
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/users/profile-image",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "profile-image"]
+            }
+          }
+        },
+        {
+          "name": "Get Profile Image",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/profile-image",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "profile-image"]
+            }
+          }
+        },
+        {
+          "name": "Delete Profile Image",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/profile-image",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "profile-image"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "User Documents",
+      "item": [
+        {
+          "name": "Upload Documents",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "documents",
+                  "type": "file",
+                  "src": []
+                },
+                {
+                  "key": "documentType",
+                  "value": "Government ID",
+                  "type": "text"
+                },
+                {
+                  "key": "description",
+                  "value": "Passport copy for verification",
+                  "type": "text"
+                },
+                {
+                  "key": "expiryDate",
+                  "value": "2030-12-31",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/documents/upload",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "documents", "upload"]
+            }
+          }
+        },
+        {
+          "name": "Get All Documents",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/documents",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "documents"]
+            }
+          }
+        },
+        {
+          "name": "Get Document by ID",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/documents/:documentId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "documents", ":documentId"],
+              "variable": [
+                {
+                  "key": "documentId",
+                  "value": "document_id_here"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Document Info",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"documentType\": \"Updated Document Type\",\n  \"description\": \"Updated description\",\n  \"expiryDate\": \"2031-12-31\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/documents/:documentId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "documents", ":documentId"],
+              "variable": [
+                {
+                  "key": "documentId",
+                  "value": "document_id_here"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Document",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/documents/:documentId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "documents", ":documentId"],
+              "variable": [
+                {
+                  "key": "documentId",
+                  "value": "document_id_here"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Add Images to Document",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "images",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/documents/:documentId/add-images",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "documents", ":documentId", "add-images"],
+              "variable": [
+                {
+                  "key": "documentId",
+                  "value": "document_id_here"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Image Management",
+      "item": [
+        {
+          "name": "Upload Single Image",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": ""
+                },
+                {
+                  "key": "folder",
+                  "value": "profile-pictures",
+                  "type": "text"
+                },
+                {
+                  "key": "publicId",
+                  "value": "",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/images/upload",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "images", "upload"]
+            }
+          }
+        },
+        {
+          "name": "Upload Multiple Images",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "images",
+                  "type": "file",
+                  "src": []
+                },
+                {
+                  "key": "folder",
+                  "value": "gallery",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/images/upload-multiple",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "images", "upload-multiple"]
+            }
+          }
+        },
+        {
+          "name": "Delete Single Image",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/images/:publicId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "images", ":publicId"],
+              "variable": [
+                {
+                  "key": "publicId",
+                  "value": "sample_public_id"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Delete Multiple Images",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{authToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"publicIds\": [\"image1_public_id\", \"image2_public_id\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/images/delete-multiple",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "images", "delete-multiple"]
+            }
+          }
+        },
+        {
+          "name": "Get Optimized Image URL",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/images/url/:publicId?width=300&height=300&crop=fill&quality=auto",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "images", "url", ":publicId"],
+              "query": [
+                {
+                  "key": "width",
+                  "value": "300"
+                },
+                {
+                  "key": "height",
+                  "value": "300"
+                },
+                {
+                  "key": "crop",
+                  "value": "fill"
+                },
+                {
+                  "key": "quality",
+                  "value": "auto"
+                }
+              ],
+              "variable": [
+                {
+                  "key": "publicId",
+                  "value": "sample_public_id"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Profile Photo Management",
+      "item": [
+        {
+          "name": "Upload Profile Photo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "profilePhoto",
+                  "description": "Profile photo file (max 5MB, images only)",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/profile-photo/upload",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "profile-photo", "upload"]
+            },
+            "description": "Upload or update user profile photo. Supports JPEG, PNG, GIF, WebP formats. Maximum file size: 5MB. Automatically optimizes and creates thumbnail."
+          }
+        },
+        {
+          "name": "Get My Profile Photo",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/profile-photo",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "profile-photo"]
+            },
+            "description": "Get current user's profile photo information including URLs, dimensions, and metadata."
+          }
+        },
+        {
+          "name": "Delete My Profile Photo",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/profile-photo",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "profile-photo"]
+            },
+            "description": "Delete current user's profile photo from both the database and Cloudinary storage."
+          }
+        },
+        {
+          "name": "Get Public Profile Photo",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/profile-photo/public/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "profile-photo", "public", "{{userId}}"]
+            },
+            "description": "Get any user's profile photo (public endpoint). Replace {{userId}} with the actual user ID."
+          },
+          "variable": [
+            {
+              "key": "userId",
+              "value": "user_id_here"
+            }
+          ]
+        }
+      ]
     }
   ]
 }
