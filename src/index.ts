@@ -9,6 +9,7 @@ import verificationRoutes from "./routes/verificationRoutes";
 import profileOptionsRoutes from "./routes/profileOptionsRoutes";
 import profilePhotoRoutes from "./routes/profilePhotoRoutes";
 import documentRoutes from "./routes/documentRoutes";
+import changePasswordRoutes from "./routes/changePasswordRoutes";
 
 // Load environment variables
 dotenv.config();
@@ -42,6 +43,7 @@ app.use("/api/verification", verificationRoutes);
 app.use("/api/profile-options", profileOptionsRoutes);
 app.use("/api/profile-photo", profilePhotoRoutes);
 app.use("/api/documents", documentRoutes);
+app.use("/api/change-password", changePasswordRoutes);
 
 // Root endpoint
 app.get("/", (req: Request, res: Response) => {
@@ -55,6 +57,7 @@ app.get("/", (req: Request, res: Response) => {
       profileOptions: "/api/profile-options",
       profilePhoto: "/api/profile-photo",
       documents: "/api/documents",
+      changePassword: "/api/change-password",
     },
   });
 });
