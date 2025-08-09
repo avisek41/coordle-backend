@@ -9,6 +9,7 @@ export interface CloudinaryUploadResult {
   format: string;
   bytes: number;
   created_at: string;
+  pages?: number; // Optional property for PDF page count
 }
 
 export interface ProfilePhotoData {
@@ -133,4 +134,178 @@ export const extractPublicIdFromUrl = (url: string): string | null => {
   } catch (error) {
     return null;
   }
+};
+
+export interface DocumentUploadData {
+  url: string;
+  publicId: string;
+  fileName: string;
+  fileSize: number;
+  mimeType: string;
+  pages?: number | undefined;
+}
+
+/**
+ * Upload document (PDF, images, or other supported file types)
+ */
+export const uploadDocument = async (
+  buffer: Buffer,
+  userId: string,
+  originalFileName: string,
+  documentType: string,
+  options?: {
+    quality?: string;
+    pages?: number;
+  }
+): Promise<DocumentUploadData> => {
+  try {
+    const fileExtension = originalFileName.split(".").pop()?.toLowerCase();
+    const timestamp = Date.now();
+    const fileName = `${documentType}_${timestamp}`;
+
+    // Determine resource type based on file extension
+    const isImage = ["jpg", "jpeg", "png", "gif", "webp"].includes(
+      fileExtension || ""
+    );
+    const isPdf = fileExtension === "pdf";
+    const isDoc = ["doc", "docx"].includes(fileExtension || "");
+
+    let resourceType: "image" | "raw" = "raw";
+    let uploadOptions: any = {
+      folder: `coordle/users/${userId}/documents`,
+      public_id: fileName,
+      overwrite: false,
+      resource_type: resourceType,
+    };
+
+    // Configure upload options based on file type
+    if (isImage) {
+      resourceType = "image";
+      uploadOptions = {
+        ...uploadOptions,
+        resource_type: "image",
+        transformation: [
+          {
+            quality: options?.quality || "auto",
+            fetch_format: "auto",
+          },
+        ],
+      };
+    } else if (isPdf) {
+      uploadOptions = {
+        ...uploadOptions,
+        resource_type: "image", // PDF as image for preview
+        pages: options?.pages || true, // Extract all pages or specific pages
+        transformation: [
+          {
+            quality: options?.quality || "auto",
+            fetch_format: "jpg",
+          },
+        ],
+      };
+    } else {
+      // For other document types (doc, docx), store as raw
+      uploadOptions = {
+        ...uploadOptions,
+        resource_type: "raw",
+      };
+    }
+
+    const result = await new Promise<CloudinaryUploadResult>(
+      (resolve, reject) => {
+        cloudinary.uploader
+          .upload_stream(uploadOptions, (error, result) => {
+            if (error) {
+              reject(error);
+            } else {
+              resolve(result as CloudinaryUploadResult);
+            }
+          })
+          .end(buffer);
+      }
+    );
+
+    // Determine MIME type based on file extension
+    let mimeType = "application/octet-stream";
+    if (isImage) {
+      mimeType = `image/${fileExtension === "jpg" ? "jpeg" : fileExtension}`;
+    } else if (isPdf) {
+      mimeType = "application/pdf";
+    } else if (fileExtension === "doc") {
+      mimeType = "application/msword";
+    } else if (fileExtension === "docx") {
+      mimeType =
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+    }
+
+    return {
+      url: result.secure_url,
+      publicId: result.public_id,
+      fileName: `${fileName}.${fileExtension}`,
+      fileSize: result.bytes,
+      mimeType,
+      pages: result.pages,
+    };
+  } catch (error) {
+    throw new Error(`Failed to upload document: ${error}`);
+  }
+};
+
+/**
+ * Delete document from Cloudinary
+ */
+export const deleteDocument = async (
+  publicId: string,
+  resourceType: "image" | "raw" = "raw"
+): Promise<void> => {
+  try {
+    await cloudinary.uploader.destroy(publicId, {
+      resource_type: resourceType,
+    });
+  } catch (error) {
+    throw new Error(`Failed to delete document: ${error}`);
+  }
+};
+
+/**
+ * Generate preview URL for document
+ */
+export const getDocumentPreviewUrl = (
+  publicId: string,
+  options?: {
+    width?: number;
+    height?: number;
+    page?: number;
+    quality?: string;
+  }
+): string => {
+  return cloudinary.url(publicId, {
+    width: options?.width || 800,
+    height: options?.height || 600,
+    crop: "fit",
+    page: options?.page || 1,
+    quality: options?.quality || "auto",
+    fetch_format: "auto",
+  });
+};
+
+/**
+ * Generate thumbnail URL for document
+ */
+export const getDocumentThumbnailUrl = (
+  publicId: string,
+  options?: {
+    width?: number;
+    height?: number;
+    page?: number;
+  }
+): string => {
+  return cloudinary.url(publicId, {
+    width: options?.width || 200,
+    height: options?.height || 200,
+    crop: "fit",
+    page: options?.page || 1,
+    quality: "auto",
+    fetch_format: "auto",
+  });
 };

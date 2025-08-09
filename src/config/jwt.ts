@@ -5,7 +5,7 @@ import bcrypt from "bcryptjs";
 const JWT_SECRET = process.env.JWT_SECRET || "1d7570a04f32c5394f9e6df4259be768";
 const JWT_REFRESH_SECRET =
   process.env.JWT_REFRESH_SECRET || "refresh_secret_key_change_in_production";
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "15m"; // Shorter access token
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "7d"; // 7 days access token
 const JWT_REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || "7d"; // Longer refresh token
 
 // Interface for JWT payload

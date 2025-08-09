@@ -1183,6 +1183,198 @@
           ]
         }
       ]
+    },
+    {
+      "name": "Documents",
+      "item": [
+        {
+          "name": "Upload Document",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "document",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/documents/upload",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "documents", "upload"]
+            },
+            "description": "Upload a document file"
+          }
+        },
+        {
+          "name": "Get All Documents",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/documents?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "documents"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number (default: 1)"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Items per page (default: 10, max: 50)"
+                },
+                {
+                  "key": "sortBy",
+                  "value": "createdAt",
+                  "description": "Sort field (default: createdAt)",
+                  "disabled": true
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "desc",
+                  "description": "Sort order: asc or desc (default: desc)",
+                  "disabled": true
+                },
+                {
+                  "key": "isVerified",
+                  "value": "true",
+                  "description": "Filter by verification status",
+                  "disabled": true
+                },
+                {
+                  "key": "isExpired",
+                  "value": "false",
+                  "description": "Filter by expiry status",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Get all documents for the authenticated user with pagination and filtering"
+          }
+        },
+        {
+          "name": "Get Document by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/documents/:documentId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "documents", ":documentId"],
+              "variable": [
+                {
+                  "key": "documentId",
+                  "value": "document_id_here"
+                }
+              ]
+            },
+            "description": "Get a specific document by its ID"
+          }
+        },
+        {
+          "name": "Update Document",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Updated Document Title\",\n  \"description\": \"Updated description\",\n  \"expiryDate\": \"2031-12-31\",\n  \"documentNumber\": \"B98765432\",\n  \"issuingAuthority\": \"Updated Authority\",\n  \"countryCode\": \"CA\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/documents/:documentId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "documents", ":documentId"],
+              "variable": [
+                {
+                  "key": "documentId",
+                  "value": "document_id_here"
+                }
+              ]
+            },
+            "description": "Update document metadata (not the file itself)"
+          }
+        },
+        {
+          "name": "Delete Document",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/documents/:documentId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "documents", ":documentId"],
+              "variable": [
+                {
+                  "key": "documentId",
+                  "value": "document_id_here"
+                }
+              ]
+            },
+            "description": "Delete a document and its file from Cloudinary"
+          }
+        },
+        {
+          "name": "Get Document Statistics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/documents/stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "documents", "stats"]
+            },
+            "description": "Get document statistics including total count, size, verification status, and expiry information"
+          }
+        }
+      ]
     }
   ]
 }
