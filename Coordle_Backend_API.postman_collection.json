@@ -527,7 +527,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"preferredName\": \"Johnny\",\n  \"phoneNumber\": \"+1234567890\",\n  \"pronouns\": \"He/Him\",\n  \"country\": \"United States\",\n  \"state\": \"California\",\n  \"postalCode\": \"90210\",\n  \"preferredAirport\": \"LAX\",\n  \"racialEthnic\": \"Asian\",\n  \"ageDemographic\": \"25-34\",\n  \"foodAllergies\": [\"Peanuts\", \"Tree Nuts\"],\n  \"dietaryRestrictions\": \"Vegetarian\",\n  \"genderIdentity\": \"Man\",\n  \"sexualOrientation\": \"Straight\",\n  \"disabilityStatus\": \"No disability\"\n}"
+              "raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"preferredName\": \"Johnny\",\n  \"phoneNumber\": \"+1234567890\",\n  \"pronouns\": \"He/Him\",\n  \"country\": \"United States\",\n  \"country_code\": \"US\",\n  \"state\": \"California\",\n  \"postalCode\": \"90210\",\n  \"preferredAirport\": \"LAX\",\n  \"racialEthnic\": \"Asian\",\n  \"ageDemographic\": \"25-34\",\n  \"foodAllergies\": [\"Peanuts\", \"Tree Nuts\"],\n  \"dietaryRestrictions\": \"Vegetarian\",\n  \"genderIdentity\": \"Man\",\n  \"sexualOrientation\": \"Straight\",\n  \"disabilityStatus\": \"No disability\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/users/setup-profile",

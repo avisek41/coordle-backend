@@ -25,6 +25,7 @@ export interface IUser extends Document {
   preferredName?: string;
   pronouns?: string;
   country?: string;
+  country_code?: string;
   state?: string;
   postalCode?: string;
   preferredAirport?: string;
@@ -138,6 +139,12 @@ const userSchema = new Schema<IUser>(
       required: false,
       trim: true,
       maxlength: [50, "Country cannot be more than 50 characters"],
+    },
+    country_code: {
+      type: String,
+      required: false,
+      trim: true,
+      maxlength: [10, "Country code cannot be more than 10 characters"],
     },
     state: {
       type: String,

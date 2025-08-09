@@ -927,6 +927,7 @@ export const setupProfile = async (
       phoneNumber,
       pronouns,
       country,
+      country_code,
       state,
       postalCode,
       preferredAirport,
@@ -971,6 +972,7 @@ export const setupProfile = async (
     if (phoneNumber !== undefined) updateData.phoneNumber = phoneNumber;
     if (pronouns !== undefined) updateData.pronouns = pronouns;
     if (country !== undefined) updateData.country = country;
+    if (country_code !== undefined) updateData.country_code = country_code;
     if (state !== undefined) updateData.state = state;
     if (postalCode !== undefined) updateData.postalCode = postalCode;
     if (preferredAirport !== undefined)

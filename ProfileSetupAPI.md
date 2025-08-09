@@ -27,6 +27,7 @@ All fields are optional. You can send any combination of the following fields:
   "phoneNumber": "+1234567890",
   "pronouns": "he/him",
   "country": "United States",
+  "country_code": "US",
   "state": "California",
   "postalCode": "90210",
   "preferredAirport": "LAX",
@@ -50,6 +51,7 @@ All fields are optional. You can send any combination of the following fields:
 | `phoneNumber`         | string  | User's phone number             | -              |
 | `pronouns`            | string  | User's preferred pronouns       | 20 characters  |
 | `country`             | string  | User's country                  | 50 characters  |
+| `country_code`        | string  | User's country code (ISO 3166)  | 10 characters  |
 | `state`               | string  | User's state/province           | 50 characters  |
 | `postalCode`          | string  | User's postal code              | 20 characters  |
 | `preferredAirport`    | string  | User's preferred airport code   | 10 characters  |
@@ -78,6 +80,7 @@ All fields are optional. You can send any combination of the following fields:
     "phoneNumber": "+1234567890",
     "pronouns": "he/him",
     "country": "United States",
+    "country_code": "US",
     "state": "California",
     "postalCode": "90210",
     "preferredAirport": "LAX",
@@ -156,7 +159,8 @@ curl -X PUT http://localhost:3000/api/users/setup-profile \
   -d '{
     "firstName": "John",
     "lastName": "Doe",
-    "country": "United States"
+    "country": "United States",
+    "country_code": "US"
   }'
 ```
 
@@ -186,6 +190,7 @@ curl -X PUT http://localhost:3000/api/users/setup-profile \
     "phoneNumber": "+1234567890",
     "pronouns": "he/him",
     "country": "United States",
+    "country_code": "US",
     "state": "California",
     "postalCode": "90210",
     "preferredAirport": "LAX",
