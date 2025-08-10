@@ -342,6 +342,7 @@ export const updateDocument = async (req: Request, res: Response) => {
       documentNumber,
       issuingAuthority,
       countryCode,
+      fileName: newFileName,
     } = req.body;
 
     if (!documentId || !mongoose.Types.ObjectId.isValid(documentId)) {
@@ -376,6 +377,22 @@ export const updateDocument = async (req: Request, res: Response) => {
         document.expiryDate = new Date(expiryDate);
       } else {
         document.expiryDate = undefined;
+      }
+    }
+
+    // Update filename if provided
+    if (newFileName !== undefined) {
+      const trimmedFileName = newFileName?.trim();
+      if (trimmedFileName && trimmedFileName.length > 0) {
+        // Preserve the original file extension
+        const originalExtension = document.originalFileName.split(".").pop();
+        const updatedFileName = trimmedFileName.endsWith(
+          `.${originalExtension}`
+        )
+          ? trimmedFileName
+          : `${trimmedFileName}.${originalExtension}`;
+
+        document.originalFileName = updatedFileName;
       }
     }
 

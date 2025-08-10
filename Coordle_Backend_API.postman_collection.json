@@ -1425,7 +1425,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"Updated Document Title\",\n  \"description\": \"Updated description\",\n  \"expiryDate\": \"2031-12-31\",\n  \"documentNumber\": \"B98765432\",\n  \"issuingAuthority\": \"Updated Authority\",\n  \"countryCode\": \"CA\"\n}"
+              "raw": "{\n  \"fileName\": \"Updated Document Name\",\n  \"description\": \"Updated description\",\n  \"expiryDate\": \"2031-12-31\",\n  \"documentNumber\": \"B98765432\",\n  \"issuingAuthority\": \"Updated Authority\",\n  \"countryCode\": \"CA\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/documents/:documentId",
@@ -1438,7 +1438,7 @@
                 }
               ]
             },
-            "description": "Update document metadata (not the file itself)"
+            "description": "Update document metadata including filename, description, expiry date, and document details (not the file itself)"
           }
         },
         {
