@@ -5,7 +5,13 @@ import {
   sendEmailVerificationLink as sendEmailVerificationLinkEmail,
   generateEmailVerificationToken,
 } from "../config/email";
-import { generateToken } from "../config/jwt";
+import { generateAccessToken } from "../config/jwt";
+import {
+  sendSuccessResponse,
+  sendErrorResponse,
+  STATUS_CODES,
+  MESSAGES,
+} from "../utils/apiResponse";
 
 // Generate a random 6-digit code
 const generateVerificationCode = (): string => {
@@ -21,20 +27,22 @@ export const sendVerificationCode = async (
     const { phoneNumber } = req.body;
 
     if (!phoneNumber) {
-      res.status(400).json({
-        success: false,
-        message: "Phone number is required",
-      });
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        "Phone number is required"
+      );
       return;
     }
 
     // Check if phone number is already verified for an existing user
     const existingUser = await User.findOne({ phoneNumber });
     if (existingUser && existingUser.isPhoneVerified) {
-      res.status(400).json({
-        success: false,
-        message: "Phone number is already verified for another user",
-      });
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        "Phone number is already verified for another user"
+      );
       return;
     }
 
@@ -56,27 +64,30 @@ export const sendVerificationCode = async (
     const smsSent = await sendTwilioSMS(phoneNumber, code);
 
     if (!smsSent) {
-      res.status(500).json({
-        success: false,
-        message: "Failed to send verification code. Please try again.",
-      });
+      sendErrorResponse(
+        res,
+        STATUS_CODES.INTERNAL_SERVER_ERROR,
+        "Failed to send verification code. Please try again."
+      );
       return;
     }
 
-    res.status(200).json({
-      success: true,
-      message: "Verification code sent successfully",
-      data: {
+    sendSuccessResponse(
+      res,
+      STATUS_CODES.OK,
+      "Verification code sent successfully",
+      {
         phoneNumber,
         expiresIn: "10 minutes",
-      },
-    });
+      }
+    );
   } catch (error) {
     console.error("Send verification code error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Internal server error while sending verification code",
-    });
+    sendErrorResponse(
+      res,
+      STATUS_CODES.INTERNAL_SERVER_ERROR,
+      "Internal server error while sending verification code"
+    );
   }
 };
 
@@ -89,10 +100,11 @@ export const verifyPhoneNumber = async (
     const { phoneNumber, code } = req.body;
 
     if (!phoneNumber || !code) {
-      res.status(400).json({
-        success: false,
-        message: "Phone number and verification code are required",
-      });
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        "Phone number and verification code are required"
+      );
       return;
     }
 
@@ -105,10 +117,11 @@ export const verifyPhoneNumber = async (
     });
 
     if (!verification) {
-      res.status(400).json({
-        success: false,
-        message: "Invalid or expired verification code",
-      });
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        "Invalid or expired verification code"
+      );
       return;
     }
 
@@ -138,30 +151,35 @@ export const verifyPhoneNumber = async (
     }
 
     // Generate JWT token
-    const token = generateToken({
+    const tokenPayload: any = {
       userId: (user._id as any).toString(),
-      phoneNumber: user.phoneNumber || undefined,
       userRole: user.userRole,
-    });
+    };
+    if (user.phoneNumber) {
+      tokenPayload.phoneNumber = user.phoneNumber;
+    }
+    const token = generateAccessToken(tokenPayload);
 
-    res.status(200).json({
-      success: true,
-      message: "Phone number verified successfully",
-      data: {
+    sendSuccessResponse(
+      res,
+      STATUS_CODES.OK,
+      "Phone number verified successfully",
+      {
         phoneNumber,
         isPhoneVerified: true,
         isEmailVerified: user.isEmailVerified,
         isProfileSetup: user.isProfileSetup || false,
         userId: user._id,
         token,
-      },
-    });
+      }
+    );
   } catch (error) {
     console.error("Verify phone number error:", error);
-    res.status(500).json({
-      success: false,
-      message: "Internal server error while verifying phone number",
-    });
+    sendErrorResponse(
+      res,
+      STATUS_CODES.INTERNAL_SERVER_ERROR,
+      "Internal server error while verifying phone number"
+    );
   }
 };
 
@@ -174,10 +192,11 @@ export const resendVerificationCode = async (
     const { phoneNumber } = req.body;
 
     if (!phoneNumber) {
-      res.status(400).json({
-        success: false,
-        message: "Phone number is required",
-      });
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        "Phone number is required"
+      );
       return;
     }
 

@@ -309,3 +309,70 @@ export const getDocumentThumbnailUrl = (
     fetch_format: "auto",
   });
 };
+
+/**
+ * Upload banner image to Cloudinary
+ */
+export const uploadBannerImage = async (
+  buffer: Buffer,
+  title: string,
+  options?: {
+    width?: number;
+    height?: number;
+    quality?: string;
+  }
+): Promise<{ url: string; publicId: string }> => {
+  try {
+    const timestamp = Date.now();
+    const uploadOptions = {
+      folder: "coordle/banners",
+      public_id: `banner_${title.replace(/\s+/g, "_")}_${timestamp}`,
+      transformation: [
+        {
+          width: options?.width || 1200,
+          height: options?.height || 400,
+          crop: "fill",
+          gravity: "auto",
+        },
+        {
+          quality: options?.quality || "auto",
+          fetch_format: "auto",
+        },
+      ],
+      overwrite: false,
+      resource_type: "image" as const,
+    };
+
+    const result = await new Promise<CloudinaryUploadResult>(
+      (resolve, reject) => {
+        cloudinary.uploader
+          .upload_stream(uploadOptions, (error, result) => {
+            if (error) {
+              reject(error);
+            } else {
+              resolve(result as CloudinaryUploadResult);
+            }
+          })
+          .end(buffer);
+      }
+    );
+
+    return {
+      url: result.secure_url,
+      publicId: result.public_id,
+    };
+  } catch (error) {
+    throw new Error(`Failed to upload banner image: ${error}`);
+  }
+};
+
+/**
+ * Delete banner image from Cloudinary
+ */
+export const deleteBannerImage = async (publicId: string): Promise<void> => {
+  try {
+    await cloudinary.uploader.destroy(publicId);
+  } catch (error) {
+    throw new Error(`Failed to delete banner image: ${error}`);
+  }
+};

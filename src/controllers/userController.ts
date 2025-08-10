@@ -8,11 +8,7 @@ import {
   PasswordReset,
 } from "../models";
 import { sendVerificationCode as sendTwilioSMS } from "../config/twilio";
-import {
-  generateToken,
-  generateTokenPair,
-  verifyRefreshToken,
-} from "../config/jwt";
+import { generateAccessToken } from "../config/jwt";
 import { sendPasswordResetEmail, generateResetToken } from "../config/email";
 import {
   sendSuccessResponse,
@@ -111,12 +107,15 @@ export const registerUser = async (
 
       const savedUser = await newUser.save();
 
-      // Generate JWT token pair
-      const tokenPair = generateTokenPair({
+      // Generate JWT token
+      const tokenPayload: any = {
         userId: (savedUser._id as any).toString(),
-        email: savedUser.email || undefined,
         userRole: savedUser.userRole,
-      });
+      };
+      if (savedUser.email) {
+        tokenPayload.email = savedUser.email;
+      }
+      const token = generateAccessToken(tokenPayload);
 
       sendSuccessResponse(
         res,
@@ -132,8 +131,7 @@ export const registerUser = async (
           isProfileSetup: savedUser.isProfileSetup,
           userRole: savedUser.userRole,
           createdAt: savedUser.createdAt,
-          accessToken: tokenPair.accessToken,
-          refreshToken: tokenPair.refreshToken,
+          token,
         }
       );
       return;
@@ -283,11 +281,14 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
       }
 
       // Generate JWT token
-      const token = generateToken({
+      const tokenPayload: any = {
         userId: (user._id as any).toString(),
-        email: user.email || undefined,
         userRole: user.userRole,
-      });
+      };
+      if (user.email) {
+        tokenPayload.email = user.email;
+      }
+      const token = generateAccessToken(tokenPayload);
 
       // Return user data with JWT token
       sendSuccessResponse(res, STATUS_CODES.OK, "Login successful with email", {
@@ -358,9 +359,9 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
         }
 
         // Generate JWT token
-        const token = generateToken({
+        const token = generateAccessToken({
           userId: (user._id as any).toString(),
-          phoneNumber: user.phoneNumber || undefined,
+          phoneNumber: user.phoneNumber,
           userRole: user.userRole,
         });
 

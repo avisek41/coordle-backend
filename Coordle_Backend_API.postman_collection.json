@@ -1486,6 +1486,210 @@
           }
         }
       ]
+    },
+    {
+      "name": "Banners",
+      "item": [
+        {
+          "name": "Get All Banners",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/banners?isActive=true&sortBy=order&sortOrder=asc",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "banners"],
+              "query": [
+                {
+                  "key": "isActive",
+                  "value": "true",
+                  "description": "Filter by active status"
+                },
+                {
+                  "key": "sortBy",
+                  "value": "order",
+                  "description": "Sort field"
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "asc",
+                  "description": "Sort order (asc/desc)"
+                }
+              ]
+            },
+            "description": "Get all banners with optional filtering and sorting"
+          }
+        },
+        {
+          "name": "Get Active Banners",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/banners/active",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "banners", "active"]
+            },
+            "description": "Get only active banners sorted by order"
+          }
+        },
+        {
+          "name": "Get Banner by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/banners/:bannerId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "banners", ":bannerId"],
+              "variable": [
+                {
+                  "key": "bannerId",
+                  "value": "banner_id_here"
+                }
+              ]
+            },
+            "description": "Get a specific banner by its ID"
+          }
+        },
+        {
+          "name": "Create Banner",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "title",
+                  "value": "Summer Sale Banner",
+                  "type": "text",
+                  "description": "Banner title"
+                },
+                {
+                  "key": "redirectLink",
+                  "value": "https://example.com/summer-sale",
+                  "type": "text",
+                  "description": "URL to redirect when banner is clicked"
+                },
+                {
+                  "key": "isActive",
+                  "value": "true",
+                  "type": "text",
+                  "description": "Whether banner is active"
+                },
+                {
+                  "key": "order",
+                  "value": "1",
+                  "type": "text",
+                  "description": "Display order (lower numbers first)"
+                },
+                {
+                  "key": "image",
+                  "type": "file",
+                  "description": "Banner image file (JPG, PNG, etc.)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/banners",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "banners"]
+            },
+            "description": "Create a new banner with image upload"
+          }
+        },
+        {
+          "name": "Update Banner",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "title",
+                  "value": "Updated Banner Title",
+                  "type": "text",
+                  "description": "Updated banner title"
+                },
+                {
+                  "key": "redirectLink",
+                  "value": "https://example.com/updated-link",
+                  "type": "text",
+                  "description": "Updated redirect URL"
+                },
+                {
+                  "key": "isActive",
+                  "value": "false",
+                  "type": "text",
+                  "description": "Updated active status"
+                },
+                {
+                  "key": "order",
+                  "value": "2",
+                  "type": "text",
+                  "description": "Updated display order"
+                },
+                {
+                  "key": "image",
+                  "type": "file",
+                  "description": "New banner image (optional)"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/banners/:bannerId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "banners", ":bannerId"],
+              "variable": [
+                {
+                  "key": "bannerId",
+                  "value": "banner_id_here"
+                }
+              ]
+            },
+            "description": "Update banner details and optionally upload new image"
+          }
+        },
+        {
+          "name": "Delete Banner",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/banners/:bannerId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "banners", ":bannerId"],
+              "variable": [
+                {
+                  "key": "bannerId",
+                  "value": "banner_id_here"
+                }
+              ]
+            },
+            "description": "Delete a banner and its image from Cloudinary"
+          }
+        }
+      ]
     }
   ]
 }

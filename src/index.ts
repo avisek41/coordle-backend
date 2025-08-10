@@ -10,6 +10,7 @@ import profileOptionsRoutes from "./routes/profileOptionsRoutes";
 import profilePhotoRoutes from "./routes/profilePhotoRoutes";
 import documentRoutes from "./routes/documentRoutes";
 import changePasswordRoutes from "./routes/changePasswordRoutes";
+import bannerRoutes from "./routes/bannerRoutes";
 
 // Load environment variables
 dotenv.config();
@@ -44,6 +45,7 @@ app.use("/api/profile-options", profileOptionsRoutes);
 app.use("/api/profile-photo", profilePhotoRoutes);
 app.use("/api/documents", documentRoutes);
 app.use("/api/change-password", changePasswordRoutes);
+app.use("/api/banners", bannerRoutes);
 
 // Root endpoint
 app.get("/", (req: Request, res: Response) => {
@@ -58,6 +60,7 @@ app.get("/", (req: Request, res: Response) => {
       profilePhoto: "/api/profile-photo",
       documents: "/api/documents",
       changePassword: "/api/change-password",
+      banners: "/api/banners",
     },
   });
 });

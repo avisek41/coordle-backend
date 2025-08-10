@@ -1,6 +1,10 @@
-import { Request, Response, NextFunction } from 'express';
-import { verifyToken, JWTPayload } from '../config/jwt';
-import { sendErrorResponse, STATUS_CODES, MESSAGES } from '../utils/apiResponse';
+import { Request, Response, NextFunction } from "express";
+import { verifyAccessToken, JWTPayload } from "../config/jwt";
+import {
+  sendErrorResponse,
+  STATUS_CODES,
+  MESSAGES,
+} from "../utils/apiResponse";
 
 // Extend Request interface to include user
 declare global {
@@ -19,25 +23,25 @@ export const authenticateToken = async (
 ): Promise<void> => {
   try {
     const authHeader = req.headers.authorization;
-    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+    const token = authHeader && authHeader.split(" ")[1]; // Bearer TOKEN
 
     if (!token) {
       sendErrorResponse(
         res,
         STATUS_CODES.UNAUTHORIZED,
-        'Access token is required'
+        "Access token is required"
       );
       return;
     }
 
-    const decoded = verifyToken(token);
+    const decoded = verifyAccessToken(token);
     req.user = decoded;
     next();
   } catch (error) {
     sendErrorResponse(
       res,
       STATUS_CODES.UNAUTHORIZED,
-      'Invalid or expired token'
+      "Invalid or expired token"
     );
     return;
   }
@@ -51,10 +55,10 @@ export const optionalAuth = async (
 ): Promise<void> => {
   try {
     const authHeader = req.headers.authorization;
-    const token = authHeader && authHeader.split(' ')[1];
+    const token = authHeader && authHeader.split(" ")[1];
 
     if (token) {
-      const decoded = verifyToken(token);
+      const decoded = verifyAccessToken(token);
       req.user = decoded;
     }
     next();
@@ -71,7 +75,7 @@ export const requireRole = (roles: string[]) => {
       sendErrorResponse(
         res,
         STATUS_CODES.UNAUTHORIZED,
-        'Authentication required'
+        "Authentication required"
       );
       return;
     }
@@ -80,11 +84,11 @@ export const requireRole = (roles: string[]) => {
       sendErrorResponse(
         res,
         STATUS_CODES.FORBIDDEN,
-        'Insufficient permissions'
+        "Insufficient permissions"
       );
       return;
     }
 
     next();
   };
-}; 
+};
