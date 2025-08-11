@@ -1690,6 +1690,78 @@
           }
         }
       ]
+    },
+    {
+      "name": "Plans",
+      "item": [
+        {
+          "name": "Get All Plans",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/plans",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "plans"]
+            },
+            "description": "Get all plans"
+          }
+        },
+        {
+          "name": "Get All Plan Prices",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/plans/prices",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "plans", "prices"]
+            },
+            "description": "Get all plan prices with formatted pricing information"
+          }
+        },
+        {
+          "name": "Get Plan by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/plans/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "plans", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "plan_id_here"
+                }
+              ]
+            },
+            "description": "Get plan by MongoDB ID"
+          }
+        },
+        {
+          "name": "Create Plan",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"planName\": \"Test Plan\",\n  \"planVariant\": \"PRO\",\n  \"price\": 1500,\n  \"currency\": \"usd\",\n  \"planId\": \"price_test_plan\",\n  \"features\": [\n    \"Feature 1\",\n    \"Feature 2\"\n  ],\n  \"allowedHost\": 3,\n  \"trialDays\": 15\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/plans",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "plans"]
+            },
+            "description": "Create a new plan"
+          }
+        }
+      ]
     }
   ]
 }

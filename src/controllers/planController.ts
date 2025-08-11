@@ -138,3 +138,55 @@ export const getPlanById = async (
     );
   }
 };
+
+// Get all plan prices
+export const getAllPlanPrices = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const plans = await Plan.find().select('planName planVariant price currency planId features allowedHost allocation participants maxParticipants freeTrial months trialDays').sort({ price: 1 });
+
+    // Format the response to show prices clearly
+    const formattedPlans = plans.map(plan => ({
+      id: plan._id,
+      planName: plan.planName,
+      planVariant: plan.planVariant || null,
+      price: plan.price,
+      priceFormatted: `$${(plan.price / 100).toFixed(2)}`,
+      currency: plan.currency,
+      planId: plan.planId,
+      features: plan.features,
+      allowedHost: plan.allowedHost,
+      allocation: plan.allocation || null,
+      participants: plan.participants || null,
+      maxParticipants: plan.maxParticipants || null,
+      freeTrial: plan.freeTrial || null,
+      months: plan.months || null,
+      trialDays: plan.trialDays,
+      summary: `${plan.planName}${plan.planVariant ? ` ${plan.planVariant}` : ''} - $${(plan.price / 100).toFixed(2)}`
+    }));
+
+    sendSuccessResponse(
+      res,
+      STATUS_CODES.OK,
+      "Plan prices retrieved successfully",
+      {
+        totalPlans: formattedPlans.length,
+        plans: formattedPlans,
+        priceRange: {
+          min: Math.min(...plans.map(p => p.price)),
+          max: Math.max(...plans.map(p => p.price)),
+          currency: "usd"
+        }
+      }
+    );
+  } catch (error) {
+    console.error("Error retrieving plan prices:", error);
+    sendErrorResponse(
+      res,
+      STATUS_CODES.INTERNAL_SERVER_ERROR,
+      "Failed to retrieve plan prices"
+    );
+  }
+};
