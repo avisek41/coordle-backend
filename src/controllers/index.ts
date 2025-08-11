@@ -5,3 +5,4 @@ export * from "./bannerController";
 export * from "./verificationController";
 export * from "./profilePhotoController";
 export * from "./profileOptionsController";
+export * from "./planController";

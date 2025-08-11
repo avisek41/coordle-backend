@@ -14,3 +14,4 @@ export {
 } from "./ProfileOptions";
 export { default as Document, type IDocument } from "./Document";
 export { default as Banner, type IBanner } from "./Banner";
+export { default as Plan, type IPlan } from "./Plan";
