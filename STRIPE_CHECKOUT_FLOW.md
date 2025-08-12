@@ -414,7 +414,7 @@ const PaymentSuccess = () => {
 ## **🔧 Environment Variables**
 
 ```bash
-STRIPE_SECRET_KEY=sk_test_51RupxGDOa8XlJno7cujR2QkItzxBbMCO0VVxtioEdHN2YgNPk7wn0XdLyBkcH7NCWCn4hwZlhBA2LBaiW5Hlqrjw00oJj7oF8I
+STRIPE_SECRET_KEY=your_stripe_secret_key_here
 STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret_here
 FRONTEND_URL=https://your-frontend-domain.com
 ```
