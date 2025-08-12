@@ -7,6 +7,7 @@ export interface IPlan extends Document {
   price: number;
   currency: string;
   planId: string;
+  stripePlanId: string;
   features: string[];
   allowedHost: number;
   allocation?: string;
@@ -15,6 +16,7 @@ export interface IPlan extends Document {
   freeTrial?: string;
   months?: number;
   trialDays: number;
+  successUrl?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -46,6 +48,12 @@ const planSchema = new Schema<IPlan>(
     planId: {
       type: String,
       required: [true, "Plan ID is required"],
+      unique: true,
+      trim: true,
+    },
+    stripePlanId: {
+      type: String,
+      required: [true, "Stripe Plan ID is required"],
       unique: true,
       trim: true,
     },
@@ -83,12 +91,17 @@ const planSchema = new Schema<IPlan>(
       required: false,
       min: [1, "Months must be at least 1"],
     },
-    trialDays: {
-      type: Number,
-      required: [true, "Trial days are required"],
-      min: [0, "Trial days cannot be negative"],
-      default: 0,
-    },
+      trialDays: {
+    type: Number,
+    required: [true, "Trial days are required"],
+    min: [0, "Trial days cannot be negative"],
+    default: 0,
+  },
+  successUrl: {
+    type: String,
+    required: false,
+    trim: true,
+  },
   },
   {
     timestamps: true,
@@ -97,9 +110,10 @@ const planSchema = new Schema<IPlan>(
 
 // Create indexes
 planSchema.index({ planId: 1 });
+planSchema.index({ stripePlanId: 1 });
 planSchema.index({ planName: 1 });
 
 // Create and export the Plan model
 const Plan = mongoose.model<IPlan>("Plan", planSchema);
 
-export default Plan; 
+export default Plan;

@@ -12,6 +12,8 @@ import documentRoutes from "./routes/documentRoutes";
 import changePasswordRoutes from "./routes/changePasswordRoutes";
 import bannerRoutes from "./routes/bannerRoutes";
 import planRoutes from "./routes/planRoutes";
+import paymentRoutes from "./routes/paymentRoutes";
+import { handleStripeWebhook } from "./controllers/webhookController";
 
 // Load environment variables
 dotenv.config();
@@ -27,6 +29,14 @@ connectDB();
 app.use(helmet()); // Security headers
 app.use(cors()); // Enable CORS
 app.use(morgan("combined")); // Logging
+
+// Webhook route at root level for Stripe CLI (BEFORE body parsing)
+app.post(
+  "/webhook",
+  express.raw({ type: "application/json" }),
+  handleStripeWebhook
+);
+
 app.use(express.json()); // Parse JSON bodies
 app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies
 
@@ -48,6 +58,7 @@ app.use("/api/documents", documentRoutes);
 app.use("/api/change-password", changePasswordRoutes);
 app.use("/api/banners", bannerRoutes);
 app.use("/api/plans", planRoutes);
+app.use("/api/payments", paymentRoutes);
 
 // Root endpoint
 app.get("/", (req: Request, res: Response) => {
@@ -64,6 +75,7 @@ app.get("/", (req: Request, res: Response) => {
       changePassword: "/api/change-password",
       banners: "/api/banners",
       plans: "/api/plans",
+      payments: "/api/payments",
     },
   });
 });

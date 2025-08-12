@@ -1762,6 +1762,209 @@
           }
         }
       ]
+    },
+    {
+      "name": "Payments",
+      "item": [
+        {
+          "name": "Create Checkout Session",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"planId\": \"plan_id_here\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/payments/create-checkout-session",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "payments", "create-checkout-session"]
+            },
+            "description": "Create a Stripe checkout session for a selected plan"
+          }
+        },
+        {
+          "name": "Confirm Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"paymentIntentId\": \"pi_1234567890\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/payments/confirm-payment",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "payments", "confirm-payment"]
+            },
+            "description": "Confirm payment and update user role from traveller to owner"
+          }
+        },
+        {
+          "name": "Get Payment History",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/payments/history?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "payments", "history"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Get payment history for authenticated user with pagination"
+          }
+        },
+        {
+          "name": "Get Payment Status",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/payments/status/:paymentIntentId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "payments", "status", ":paymentIntentId"],
+              "variable": [
+                {
+                  "key": "paymentIntentId",
+                  "value": "pi_1234567890"
+                }
+              ]
+            },
+            "description": "Get status of a specific payment by Stripe payment intent ID"
+          }
+        },
+        {
+          "name": "Get Payment Success Details",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/payments/success/:sessionId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "payments", "success", ":sessionId"],
+              "variable": [
+                {
+                  "key": "sessionId",
+                  "value": "cs_1234567890"
+                }
+              ]
+            },
+            "description": "Get detailed success information after payment completion"
+          }
+        },
+        {
+          "name": "Redirect to Success URL",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/payments/redirect/:sessionId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "payments", "redirect", ":sessionId"],
+              "variable": [
+                {
+                  "key": "sessionId",
+                  "value": "cs_1234567890"
+                }
+              ]
+            },
+            "description": "Redirect to plan-specific success URL after payment (no auth required)"
+          }
+        },
+        {
+          "name": "Cancel Payment",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/payments/cancel/:sessionId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "payments", "cancel", ":sessionId"],
+              "variable": [
+                {
+                  "key": "sessionId",
+                  "value": "cs_1234567890"
+                }
+              ]
+            },
+            "description": "Handle payment cancellation (no auth required)"
+          }
+        },
+        {
+          "name": "Stripe Webhook",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "stripe-signature",
+                "value": "whsec_webhook_secret_here",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"payment_intent.succeeded\",\n  \"data\": {\n    \"object\": {\n      \"id\": \"pi_1234567890\",\n      \"metadata\": {\n        \"userId\": \"user_id_here\",\n        \"planId\": \"plan_id_here\"\n      }\n    }\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/payments/webhook",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "payments", "webhook"]
+            },
+            "description": "Stripe webhook endpoint for payment events (no authentication required)"
+          }
+        }
+      ]
     }
   ]
 }
