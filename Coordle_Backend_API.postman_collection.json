@@ -1994,8 +1994,13 @@
                   "type": "text"
                 },
                 {
-                  "key": "to_location",
-                  "value": "{\"latitude\": 26.9124, \"longitude\": 75.7873}",
+                  "key": "to_location_latitude",
+                  "value": "26.9124",
+                  "type": "text"
+                },
+                {
+                  "key": "to_location_longitude",
+                  "value": "75.7873",
                   "type": "text"
                 },
                 {
@@ -2004,7 +2009,12 @@
                   "type": "text"
                 },
                 {
-                  "key": "from_location",
+                  "key": "from_location_latitude",
+                  "value": "",
+                  "type": "text"
+                },
+                {
+                  "key": "from_location_longitude",
                   "value": "",
                   "type": "text"
                 },

@@ -30,9 +30,11 @@ export const createTrip = async (
     const {
       name,
       to_address,
-      to_location,
+      to_location_latitude,
+      to_location_longitude,
       from_address = "",
-      from_location = null,
+      from_location_latitude = "",
+      from_location_longitude = "",
       display_start,
       display_end,
       start_date,
@@ -81,41 +83,25 @@ export const createTrip = async (
     // Generate chat ID
     const chatId = generateChatId();
 
-    // Parse location data if they are strings
-    let parsedToLocation = to_location;
-    let parsedFromLocation = from_location;
+    // Build location objects from separate fields
+    const parsedToLocation = {
+      latitude: parseFloat(to_location_latitude),
+      longitude: parseFloat(to_location_longitude),
+    };
 
-    if (typeof to_location === "string") {
-      try {
-        parsedToLocation = JSON.parse(to_location);
-      } catch (error) {
-        sendErrorResponse(
-          res,
-          STATUS_CODES.BAD_REQUEST,
-          "Invalid to_location format"
-        );
-        return;
-      }
+    let parsedFromLocation = null;
+    if (from_location_latitude && from_location_longitude) {
+      parsedFromLocation = {
+        latitude: parseFloat(from_location_latitude),
+        longitude: parseFloat(from_location_longitude),
+      };
     }
 
-    if (from_location && typeof from_location === "string") {
-      try {
-        parsedFromLocation = JSON.parse(from_location);
-      } catch (error) {
-        sendErrorResponse(
-          res,
-          STATUS_CODES.BAD_REQUEST,
-          "Invalid from_location format"
-        );
-        return;
-      }
-    }
-
-    // Validate location coordinates AFTER parsing
+    // Validate location coordinates
     if (
       !parsedToLocation ||
-      !parsedToLocation.latitude ||
-      !parsedToLocation.longitude
+      isNaN(parsedToLocation.latitude) ||
+      isNaN(parsedToLocation.longitude)
     ) {
       sendErrorResponse(
         res,
