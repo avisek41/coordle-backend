@@ -67,15 +67,6 @@ export const createTrip = async (
       return;
     }
 
-    if (!to_location || !to_location.latitude || !to_location.longitude) {
-      sendErrorResponse(
-        res,
-        STATUS_CODES.BAD_REQUEST,
-        "Destination location coordinates are required"
-      );
-      return;
-    }
-
     // Get user info from request (assuming auth middleware sets this)
     const user = (req as any).user;
     if (!user) {
@@ -118,6 +109,20 @@ export const createTrip = async (
         );
         return;
       }
+    }
+
+    // Validate location coordinates AFTER parsing
+    if (
+      !parsedToLocation ||
+      !parsedToLocation.latitude ||
+      !parsedToLocation.longitude
+    ) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        "Destination location coordinates are required"
+      );
+      return;
     }
 
     // Create trip data
