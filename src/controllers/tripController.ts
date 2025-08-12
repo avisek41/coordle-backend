@@ -80,6 +80,11 @@ export const createTrip = async (
       return;
     }
 
+    // Debug: Log user object to see its structure
+    console.log("User object:", JSON.stringify(user, null, 2));
+    console.log("User._id:", user._id);
+    console.log("User._id type:", typeof user._id);
+
     // Generate chat ID
     const chatId = generateChatId();
 
@@ -112,18 +117,20 @@ export const createTrip = async (
     }
 
     // Create trip data
+    const userId = user.userId;
+    if (!userId) {
+      sendErrorResponse(res, STATUS_CODES.UNAUTHORIZED, "Invalid user ID");
+      return;
+    }
+
     const tripData: Partial<ITrip> = {
       name,
       author: user.email || user.phoneNumber || "Unknown",
       owner: {
-        ref: `/users/${user._id}`,
+        ref: `/users/${userId}`,
       },
-      owner_id: user._id.toString(),
+      owner_id: userId,
       photo_url: "",
-      cover_image: {
-        url: "",
-        uploadedAt: new Date(),
-      },
       display_start,
       display_end,
       start_date: new Date(start_date),
@@ -133,8 +140,8 @@ export const createTrip = async (
       from_address,
       from_location: parsedFromLocation,
       chatId,
-      hosts: [`/users/${user._id}`],
-      users: [`/users/${user._id}`],
+      hosts: [`/users/${userId}`],
+      users: [`/users/${userId}`],
     };
 
     // Create the trip

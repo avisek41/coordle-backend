@@ -82,7 +82,8 @@ const tripSchema = new Schema<ITrip>(
     cover_image: {
       url: {
         type: String,
-        required: true,
+        required: false,
+        default: "",
         trim: true,
       },
       uploadedAt: {
@@ -225,28 +226,27 @@ tripSchema.pre("save", function (next) {
 });
 
 // Virtual for trip duration
-tripSchema.virtual('duration').get(function() {
+tripSchema.virtual("duration").get(function () {
   if (!this.start_date || !this.end_date) {
     return null;
   }
-  
+
   const start = new Date(this.start_date);
   const end = new Date(this.end_date);
   const diffTime = Math.abs(end.getTime() - start.getTime());
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  
-  if (diffDays === 1) {
+
+  // If same date or 1 day difference, return "1 day"
+  if (diffDays === 0 || diffDays === 1) {
     return "1 day";
-  } else if (diffDays === 0) {
-    return "Same day";
   } else {
     return `${diffDays} days`;
   }
 });
 
 // Ensure virtual fields are included in JSON output
-tripSchema.set('toJSON', { virtuals: true });
-tripSchema.set('toObject', { virtuals: true });
+tripSchema.set("toJSON", { virtuals: true });
+tripSchema.set("toObject", { virtuals: true });
 
 const Trip = mongoose.model<ITrip>("Trip", tripSchema);
 
