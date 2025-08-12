@@ -376,3 +376,125 @@ export const deleteBannerImage = async (publicId: string): Promise<void> => {
     throw new Error(`Failed to delete banner image: ${error}`);
   }
 };
+
+/**
+ * Upload trip cover image to Cloudinary
+ */
+export const uploadTripCoverImage = async (
+  buffer: Buffer,
+  tripId: string,
+  options?: {
+    width?: number;
+    height?: number;
+    quality?: string;
+  }
+): Promise<{ url: string; publicId: string }> => {
+  try {
+    const uploadOptions = {
+      folder: `coordle/trips/${tripId}/cover`,
+      public_id: `cover_${tripId}_${Date.now()}`,
+      transformation: [
+        {
+          width: options?.width || 1200,
+          height: options?.height || 600,
+          crop: "fill",
+          gravity: "auto",
+        },
+        {
+          quality: options?.quality || "auto",
+          fetch_format: "auto",
+        },
+      ],
+      overwrite: true,
+      resource_type: "image" as const,
+    };
+
+    const result = await new Promise<CloudinaryUploadResult>(
+      (resolve, reject) => {
+        cloudinary.uploader
+          .upload_stream(uploadOptions, (error, result) => {
+            if (error) {
+              reject(error);
+            } else {
+              resolve(result as CloudinaryUploadResult);
+            }
+          })
+          .end(buffer);
+      }
+    );
+
+    return {
+      url: result.secure_url,
+      publicId: result.public_id,
+    };
+  } catch (error) {
+    throw new Error(`Failed to upload trip cover image: ${error}`);
+  }
+};
+
+/**
+ * Upload trip gallery image to Cloudinary
+ */
+export const uploadTripGalleryImage = async (
+  buffer: Buffer,
+  tripId: string,
+  imageName: string,
+  options?: {
+    width?: number;
+    height?: number;
+    quality?: string;
+  }
+): Promise<{ url: string; publicId: string }> => {
+  try {
+    const uploadOptions = {
+      folder: `coordle/trips/${tripId}/gallery`,
+      public_id: `${imageName}_${Date.now()}`,
+      transformation: [
+        {
+          width: options?.width || 800,
+          height: options?.height || 600,
+          crop: "fill",
+          gravity: "auto",
+        },
+        {
+          quality: options?.quality || "auto",
+          fetch_format: "auto",
+        },
+      ],
+      overwrite: false,
+      resource_type: "image" as const,
+    };
+
+    const result = await new Promise<CloudinaryUploadResult>(
+      (resolve, reject) => {
+        cloudinary.uploader
+          .upload_stream(uploadOptions, (error, result) => {
+            if (error) {
+              reject(error);
+            } else {
+              resolve(result as CloudinaryUploadResult);
+            }
+          })
+          .end(buffer);
+      }
+    );
+
+    return {
+      url: result.secure_url,
+      publicId: result.public_id,
+    };
+  } catch (error) {
+    throw new Error(`Failed to upload trip gallery image: ${error}`);
+  }
+};
+
+/**
+ * Delete trip image from Cloudinary
+ */
+export const deleteTripImage = async (publicId: string): Promise<void> => {
+  try {
+    await cloudinary.uploader.destroy(publicId);
+  } catch (error) {
+    throw new Error(`Failed to delete trip image: ${error}`);
+  }
+};

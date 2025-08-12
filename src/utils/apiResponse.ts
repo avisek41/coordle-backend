@@ -93,4 +93,19 @@ export const MESSAGES = {
   USER_ID_REQUIRED: "User ID is required",
   INTERNAL_SERVER_ERROR: "Internal server error",
   SMS_SEND_FAILED: "Failed to send verification code. Please try again.",
+
+  // Trip messages
+  TRIP_CREATED: "Trip created successfully",
+  TRIP_UPDATED: "Trip updated successfully",
+  TRIP_DELETED: "Trip deleted successfully",
+  TRIP_RETRIEVED: "Trip retrieved successfully",
+  TRIPS_RETRIEVED: "Trips retrieved successfully",
+  TRIP_NOT_FOUND: "Trip not found",
+  TRIP_ID_REQUIRED: "Trip ID is required",
+  TRIP_NAME_REQUIRED: "Trip name is required",
+  TRIP_DATES_REQUIRED: "Trip start and end dates are required",
+  TRIP_ADDRESS_REQUIRED: "Trip destination address is required",
+  TRIP_COVER_IMAGE_REQUIRED: "Trip cover image is required",
+  TRIP_COVER_IMAGE_UPLOAD_FAILED: "Failed to upload trip cover image",
+  TRIP_ALREADY_EXISTS: "Trip with this ID already exists",
 } as const;

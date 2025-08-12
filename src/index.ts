@@ -13,6 +13,7 @@ import changePasswordRoutes from "./routes/changePasswordRoutes";
 import bannerRoutes from "./routes/bannerRoutes";
 import planRoutes from "./routes/planRoutes";
 import paymentRoutes from "./routes/paymentRoutes";
+import tripRoutes from "./routes/tripRoutes";
 import { handleStripeWebhook } from "./controllers/webhookController";
 
 // Load environment variables
@@ -59,6 +60,7 @@ app.use("/api/change-password", changePasswordRoutes);
 app.use("/api/banners", bannerRoutes);
 app.use("/api/plans", planRoutes);
 app.use("/api/payments", paymentRoutes);
+app.use("/api/trips", tripRoutes);
 
 // Root endpoint
 app.get("/", (req: Request, res: Response) => {
@@ -76,6 +78,7 @@ app.get("/", (req: Request, res: Response) => {
       banners: "/api/banners",
       plans: "/api/plans",
       payments: "/api/payments",
+      trips: "/api/trips",
     },
   });
 });

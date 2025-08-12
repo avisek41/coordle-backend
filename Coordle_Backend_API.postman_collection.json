@@ -1965,6 +1965,202 @@
           }
         }
       ]
+    },
+    {
+      "name": "Trips",
+      "item": [
+        {
+          "name": "Create Trip",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"YORK TRIP\",\n  \"to_address\": \"Jaipur, Rajasthan, India\",\n  \"to_location\": {\n    \"latitude\": 26.9124,\n    \"longitude\": 75.7873\n  },\n  \"from_address\": \"\",\n  \"from_location\": null,\n  \"display_start\": \"03/16/2025\",\n  \"display_end\": \"03/31/2025\",\n  \"start_date\": \"2025-03-16T00:00:00Z\",\n  \"end_date\": \"2025-03-31T00:00:00Z\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/trips",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "trips"]
+            },
+            "description": "Create a new trip with required fields"
+          }
+        },
+        {
+          "name": "Upload Trip Cover Image",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "coverImage",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/trips/:id/cover-image",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "trips", ":id", "cover-image"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "507f1f77bcf86cd799439011"
+                }
+              ]
+            },
+            "description": "Upload cover image for a specific trip"
+          }
+        },
+        {
+          "name": "Get All Trips",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/trips?page=1&limit=10&type=group",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "trips"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Get all trips with pagination and optional filters"
+          }
+        },
+        {
+          "name": "Get Trip by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/trips/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "trips", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "507f1f77bcf86cd799439011"
+                }
+              ]
+            },
+            "description": "Get a specific trip by its ID"
+          }
+        },
+        {
+          "name": "Update Trip",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated YORK TRIP\",\n  \"to_address\": \"Updated Jaipur, Rajasthan, India\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/trips/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "trips", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "507f1f77bcf86cd799439011"
+                }
+              ]
+            },
+            "description": "Update a specific trip"
+          }
+        },
+        {
+          "name": "Delete Trip",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/trips/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "trips", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "507f1f77bcf86cd799439011"
+                }
+              ]
+            },
+            "description": "Delete a specific trip"
+          }
+        },
+        {
+          "name": "Get Trips by User",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/trips/user/:userId?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "trips", "user", ":userId"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ],
+              "variable": [
+                {
+                  "key": "userId",
+                  "value": "B2Jh8N0GHbORdjOy8ct9HHJrJdQ2"
+                }
+              ]
+            },
+            "description": "Get all trips for a specific user"
+          }
+        }
+      ]
     }
   ]
 }

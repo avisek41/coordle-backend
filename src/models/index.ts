@@ -16,3 +16,4 @@ export { default as Document, type IDocument } from "./Document";
 export { default as Banner, type IBanner } from "./Banner";
 export { default as Plan, type IPlan } from "./Plan";
 export { default as Payment, type IPayment } from "./Payment";
+export { default as Trip, type ITrip } from "./Trip";
