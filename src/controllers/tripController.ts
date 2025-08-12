@@ -21,7 +21,7 @@ const generateChatId = (): string => {
   return result;
 };
 
-// Create a new trip
+// Create a new trip with cover image
 export const createTrip = async (
   req: Request,
   res: Response
@@ -90,6 +90,36 @@ export const createTrip = async (
     // Generate chat ID
     const chatId = generateChatId();
 
+    // Parse location data if they are strings
+    let parsedToLocation = to_location;
+    let parsedFromLocation = from_location;
+
+    if (typeof to_location === "string") {
+      try {
+        parsedToLocation = JSON.parse(to_location);
+      } catch (error) {
+        sendErrorResponse(
+          res,
+          STATUS_CODES.BAD_REQUEST,
+          "Invalid to_location format"
+        );
+        return;
+      }
+    }
+
+    if (from_location && typeof from_location === "string") {
+      try {
+        parsedFromLocation = JSON.parse(from_location);
+      } catch (error) {
+        sendErrorResponse(
+          res,
+          STATUS_CODES.BAD_REQUEST,
+          "Invalid from_location format"
+        );
+        return;
+      }
+    }
+
     // Create trip data
     const tripData: Partial<ITrip> = {
       name,
@@ -108,9 +138,9 @@ export const createTrip = async (
       start_date: new Date(start_date),
       end_date: new Date(end_date),
       to_address,
-      to_location,
+      to_location: parsedToLocation,
       from_address,
-      from_location,
+      from_location: parsedFromLocation,
       chatId,
       hosts: [`/users/${user._id}`],
       users: [`/users/${user._id}`],
@@ -119,6 +149,27 @@ export const createTrip = async (
     // Create the trip
     const newTrip = new Trip(tripData);
     await newTrip.save();
+
+    // Upload cover image if provided
+    if (req.file) {
+      try {
+        const uploadResult = await uploadTripCoverImage(
+          req.file.buffer,
+          (newTrip._id as any).toString()
+        );
+
+        // Update trip with cover image
+        newTrip.cover_image = {
+          url: uploadResult.url,
+          uploadedAt: new Date(),
+        };
+
+        await newTrip.save();
+      } catch (error) {
+        console.error("Error uploading cover image:", error);
+        // Continue without cover image if upload fails
+      }
+    }
 
     // Convert to object to include virtual fields
     const tripResponse = newTrip.toObject();

@@ -30,13 +30,13 @@ const upload = multer({
 });
 
 // Trip CRUD routes
-router.post("/", authenticateToken, createTrip);
+router.post("/", authenticateToken, upload.single("coverImage"), createTrip);
 router.get("/", getAllTrips);
 router.get("/:id", getTripById);
 router.put("/:id", authenticateToken, updateTrip);
 router.delete("/:id", authenticateToken, deleteTrip);
 
-// Trip cover image upload
+// Trip cover image upload (for updating existing trips)
 router.post(
   "/:id/cover-image",
   authenticateToken,
@@ -47,4 +47,4 @@ router.post(
 // User-specific trip routes
 router.get("/user/:userId", getTripsByUser);
 
-export default router; 
+export default router;

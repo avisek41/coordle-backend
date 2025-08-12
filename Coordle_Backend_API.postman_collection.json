@@ -1970,14 +1970,10 @@
       "name": "Trips",
       "item": [
         {
-          "name": "Create Trip",
+          "name": "Create Trip with Cover Image",
           "request": {
             "method": "POST",
             "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
               {
                 "key": "Authorization",
                 "value": "Bearer {{authToken}}",
@@ -1985,15 +1981,66 @@
               }
             ],
             "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"YORK TRIP\",\n  \"to_address\": \"Jaipur, Rajasthan, India\",\n  \"to_location\": {\n    \"latitude\": 26.9124,\n    \"longitude\": 75.7873\n  },\n  \"from_address\": \"\",\n  \"from_location\": null,\n  \"display_start\": \"03/16/2025\",\n  \"display_end\": \"03/31/2025\",\n  \"start_date\": \"2025-03-16T00:00:00Z\",\n  \"end_date\": \"2025-03-31T00:00:00Z\"\n}"
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "name",
+                  "value": "YORK TRIP",
+                  "type": "text"
+                },
+                {
+                  "key": "to_address",
+                  "value": "Jaipur, Rajasthan, India",
+                  "type": "text"
+                },
+                {
+                  "key": "to_location",
+                  "value": "{\"latitude\": 26.9124, \"longitude\": 75.7873}",
+                  "type": "text"
+                },
+                {
+                  "key": "from_address",
+                  "value": "",
+                  "type": "text"
+                },
+                {
+                  "key": "from_location",
+                  "value": "",
+                  "type": "text"
+                },
+                {
+                  "key": "display_start",
+                  "value": "03/16/2025",
+                  "type": "text"
+                },
+                {
+                  "key": "display_end",
+                  "value": "03/31/2025",
+                  "type": "text"
+                },
+                {
+                  "key": "start_date",
+                  "value": "2025-03-16T00:00:00Z",
+                  "type": "text"
+                },
+                {
+                  "key": "end_date",
+                  "value": "2025-03-31T00:00:00Z",
+                  "type": "text"
+                },
+                {
+                  "key": "coverImage",
+                  "type": "file",
+                  "src": []
+                }
+              ]
             },
             "url": {
               "raw": "{{baseUrl}}/api/trips",
               "host": ["{{baseUrl}}"],
               "path": ["api", "trips"]
             },
-            "description": "Create a new trip with required fields"
+            "description": "Create a new trip with cover image upload in single request"
           }
         },
         {
