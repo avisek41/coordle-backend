@@ -257,7 +257,7 @@ export const getAllTrips = async (
   res: Response
 ): Promise<void> => {
   try {
-    const { page = 1, limit = 10, owner_id } = req.query;
+    const { page = 1, limit = 10, owner_id, status } = req.query;
 
     const query: any = {};
 
@@ -266,10 +266,22 @@ export const getAllTrips = async (
       query.owner_id = owner_id;
     }
 
+    // Add status filter (upcoming, past)
+    if (status) {
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()); // Start of today
+
+      if (status === "upcoming") {
+        query.end_date = { $gte: today }; // Include today and future trips
+      } else if (status === "past") {
+        query.end_date = { $lt: today }; // Trips that ended before today
+      }
+    }
+
     const skip = (Number(page) - 1) * Number(limit);
 
     const trips = await Trip.find(query)
-      .sort({ createdAt: -1 })
+      .sort({ start_date: 1 }) // Sort by start date
       .skip(skip)
       .limit(Number(limit));
 
@@ -499,6 +511,112 @@ export const getTripsByUser = async (
     );
   } catch (error) {
     console.error("Error getting user trips:", error);
+    sendErrorResponse(
+      res,
+      STATUS_CODES.INTERNAL_SERVER_ERROR,
+      MESSAGES.INTERNAL_SERVER_ERROR
+    );
+  }
+};
+
+// Get upcoming trips
+export const getUpcomingTrips = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { page = 1, limit = 10, owner_id } = req.query;
+    const now = new Date();
+
+    const query: any = {
+      start_date: { $gt: now }, // Trips that start in the future
+    };
+
+    if (owner_id) {
+      query.owner_id = owner_id;
+    }
+
+    const skip = (Number(page) - 1) * Number(limit);
+
+    const trips = await Trip.find(query)
+      .sort({ start_date: 1 }) // Sort by start date (earliest first)
+      .skip(skip)
+      .limit(Number(limit));
+
+    const total = await Trip.countDocuments(query);
+
+    // Convert trips to objects to include virtual fields
+    const tripsResponse = trips.map((trip) => trip.toObject());
+
+    sendSuccessResponse(
+      res,
+      STATUS_CODES.OK,
+      "Upcoming trips retrieved successfully",
+      {
+        trips: tripsResponse,
+        pagination: {
+          page: Number(page),
+          limit: Number(limit),
+          total,
+          pages: Math.ceil(total / Number(limit)),
+        },
+      }
+    );
+  } catch (error) {
+    console.error("Error getting upcoming trips:", error);
+    sendErrorResponse(
+      res,
+      STATUS_CODES.INTERNAL_SERVER_ERROR,
+      MESSAGES.INTERNAL_SERVER_ERROR
+    );
+  }
+};
+
+// Get past trips
+export const getPastTrips = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { page = 1, limit = 10, owner_id } = req.query;
+    const now = new Date();
+
+    const query: any = {
+      end_date: { $lt: now }, // Trips that have ended
+    };
+
+    if (owner_id) {
+      query.owner_id = owner_id;
+    }
+
+    const skip = (Number(page) - 1) * Number(limit);
+
+    const trips = await Trip.find(query)
+      .sort({ end_date: -1 }) // Sort by end date (most recent first)
+      .skip(skip)
+      .limit(Number(limit));
+
+    const total = await Trip.countDocuments(query);
+
+    // Convert trips to objects to include virtual fields
+    const tripsResponse = trips.map((trip) => trip.toObject());
+
+    sendSuccessResponse(
+      res,
+      STATUS_CODES.OK,
+      "Past trips retrieved successfully",
+      {
+        trips: tripsResponse,
+        pagination: {
+          page: Number(page),
+          limit: Number(limit),
+          total,
+          pages: Math.ceil(total / Number(limit)),
+        },
+      }
+    );
+  } catch (error) {
+    console.error("Error getting past trips:", error);
     sendErrorResponse(
       res,
       STATUS_CODES.INTERNAL_SERVER_ERROR,
