@@ -356,7 +356,19 @@ export const updateTrip = async (
 ): Promise<void> => {
   try {
     const { id } = req.params;
-    const updateData = req.body;
+    const {
+      name,
+      to_address,
+      to_location_latitude,
+      to_location_longitude,
+      from_address,
+      from_location_latitude,
+      from_location_longitude,
+      display_start,
+      display_end,
+      start_date,
+      end_date,
+    } = req.body;
 
     if (!id) {
       sendErrorResponse(
@@ -374,15 +386,64 @@ export const updateTrip = async (
       return;
     }
 
+    // Build update data object
+    const updateData: any = {};
+
+    // Add fields if they exist in the request
+    if (name !== undefined) updateData.name = name;
+    if (to_address !== undefined) updateData.to_address = to_address;
+    if (from_address !== undefined) updateData.from_address = from_address;
+    if (display_start !== undefined) updateData.display_start = display_start;
+    if (display_end !== undefined) updateData.display_end = display_end;
+    if (start_date !== undefined) updateData.start_date = new Date(start_date);
+    if (end_date !== undefined) updateData.end_date = new Date(end_date);
+
+    // Handle location updates
+    if (to_location_latitude && to_location_longitude) {
+      updateData.to_location = {
+        latitude: parseFloat(to_location_latitude),
+        longitude: parseFloat(to_location_longitude),
+      };
+    }
+
+    if (from_location_latitude && from_location_longitude) {
+      updateData.from_location = {
+        latitude: parseFloat(from_location_latitude),
+        longitude: parseFloat(from_location_longitude),
+      };
+    }
+
     // Update trip
-    const updatedTrip = await Trip.findByIdAndUpdate(id, updateData, {
-      new: true,
-      runValidators: true,
-    });
+    const updatedTrip = await Trip.findByIdAndUpdate(
+      id,
+      { $set: updateData },
+      {
+        new: true,
+        runValidators: true,
+      }
+    );
 
     if (!updatedTrip) {
       sendErrorResponse(res, STATUS_CODES.NOT_FOUND, MESSAGES.TRIP_NOT_FOUND);
       return;
+    }
+
+    // Upload cover image if provided
+    if (req.file) {
+      try {
+        const uploadResult = await uploadTripCoverImage(req.file.buffer, id);
+
+        // Update trip with cover image
+        updatedTrip.cover_image = {
+          url: uploadResult.url,
+          uploadedAt: new Date(),
+        };
+
+        await updatedTrip.save();
+      } catch (error) {
+        console.error("Error uploading cover image:", error);
+        // Continue without cover image if upload fails
+      }
     }
 
     // Convert to object to include virtual fields

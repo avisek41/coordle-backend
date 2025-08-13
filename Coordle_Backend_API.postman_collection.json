@@ -2136,18 +2136,75 @@
             "method": "PUT",
             "header": [
               {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
                 "key": "Authorization",
                 "value": "Bearer {{authToken}}",
                 "type": "text"
               }
             ],
             "body": {
-              "mode": "raw",
-              "raw": "{\n  \"name\": \"Updated YORK TRIP\",\n  \"to_address\": \"Updated Jaipur, Rajasthan, India\"\n}"
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "name",
+                  "value": "Updated YORK TRIP",
+                  "type": "text"
+                },
+                {
+                  "key": "to_address",
+                  "value": "Updated Jaipur, Rajasthan, India",
+                  "type": "text"
+                },
+                {
+                  "key": "from_address",
+                  "value": "Mumbai, Maharashtra, India",
+                  "type": "text"
+                },
+                {
+                  "key": "display_start",
+                  "value": "Jan 15, 2024",
+                  "type": "text"
+                },
+                {
+                  "key": "display_end",
+                  "value": "Jan 20, 2024",
+                  "type": "text"
+                },
+                {
+                  "key": "start_date",
+                  "value": "2024-01-15T00:00:00.000Z",
+                  "type": "text"
+                },
+                {
+                  "key": "end_date",
+                  "value": "2024-01-20T23:59:59.000Z",
+                  "type": "text"
+                },
+                {
+                  "key": "to_location_latitude",
+                  "value": "26.9124",
+                  "type": "text"
+                },
+                {
+                  "key": "to_location_longitude",
+                  "value": "75.7873",
+                  "type": "text"
+                },
+                {
+                  "key": "from_location_latitude",
+                  "value": "19.0760",
+                  "type": "text"
+                },
+                {
+                  "key": "from_location_longitude",
+                  "value": "72.8777",
+                  "type": "text"
+                },
+                {
+                  "key": "coverImage",
+                  "type": "file",
+                  "src": []
+                }
+              ]
             },
             "url": {
               "raw": "{{baseUrl}}/api/trips/:id",
@@ -2160,7 +2217,7 @@
                 }
               ]
             },
-            "description": "Update a specific trip"
+            "description": "Update a specific trip with form-data (supports file upload)"
           }
         },
         {

@@ -33,7 +33,7 @@ const upload = multer({
 router.post("/", authenticateToken, upload.single("coverImage"), createTrip);
 router.get("/", getAllTrips);
 router.get("/:id", getTripById);
-router.put("/:id", authenticateToken, updateTrip);
+router.put("/:id", authenticateToken, upload.single("coverImage"), updateTrip);
 router.delete("/:id", authenticateToken, deleteTrip);
 
 // Trip cover image upload (for updating existing trips)
