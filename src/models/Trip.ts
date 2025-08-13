@@ -11,6 +11,7 @@ export interface ITrip extends Document {
   photo_url: string;
   cover_image: {
     url: string;
+    publicId: string;
     uploadedAt: Date;
   };
   display_start: string;
@@ -81,6 +82,12 @@ const tripSchema = new Schema<ITrip>(
     },
     cover_image: {
       url: {
+        type: String,
+        required: false,
+        default: "",
+        trim: true,
+      },
+      publicId: {
         type: String,
         required: false,
         default: "",

@@ -9,6 +9,7 @@ import {
 import {
   uploadTripCoverImage,
   deleteTripImage,
+  deleteTripFolder,
 } from "../utils/cloudinaryUtils";
 // Function to generate chat ID in the format: 20 character alphanumeric string
 const generateChatId = (): string => {
@@ -156,6 +157,7 @@ export const createTrip = async (
         // Update trip with cover image
         newTrip.cover_image = {
           url: uploadResult.url,
+          publicId: uploadResult.publicId,
           uploadedAt: new Date(),
         };
 
@@ -219,12 +221,23 @@ export const uploadTripCoverImageController = async (
       return;
     }
 
+    // Delete old cover image from Cloudinary if exists
+    if (trip.cover_image && trip.cover_image.publicId) {
+      try {
+        await deleteTripImage(trip.cover_image.publicId);
+      } catch (error) {
+        console.error("Error deleting old cover image from Cloudinary:", error);
+        // Continue with upload even if deletion fails
+      }
+    }
+
     // Upload image to Cloudinary
     const uploadResult = await uploadTripCoverImage(req.file.buffer, id);
 
     // Update trip with new cover image
     trip.cover_image = {
       url: uploadResult.url,
+      publicId: uploadResult.publicId,
       uploadedAt: new Date(),
     };
 
@@ -431,11 +444,25 @@ export const updateTrip = async (
     // Upload cover image if provided
     if (req.file) {
       try {
+        // Delete old cover image from Cloudinary if exists
+        if (updatedTrip.cover_image && updatedTrip.cover_image.publicId) {
+          try {
+            await deleteTripImage(updatedTrip.cover_image.publicId);
+          } catch (error) {
+            console.error(
+              "Error deleting old cover image from Cloudinary:",
+              error
+            );
+            // Continue with upload even if deletion fails
+          }
+        }
+
         const uploadResult = await uploadTripCoverImage(req.file.buffer, id);
 
         // Update trip with cover image
         updatedTrip.cover_image = {
           url: uploadResult.url,
+          publicId: uploadResult.publicId,
           uploadedAt: new Date(),
         };
 
@@ -489,19 +516,16 @@ export const deleteTrip = async (
       return;
     }
 
-    // Delete cover image from Cloudinary if exists
-    if (trip.cover_image && trip.cover_image.url) {
-      try {
-        const publicId = trip.cover_image.url.split("/").pop()?.split(".")[0];
-        if (publicId) {
-          await deleteTripImage(publicId);
-        }
-      } catch (error) {
-        console.error("Error deleting cover image from Cloudinary:", error);
-      }
+    // Delete entire trip folder from Cloudinary (includes cover image, gallery images, etc.)
+    try {
+      await deleteTripFolder(id);
+      console.log(`Successfully deleted trip folder from Cloudinary: ${id}`);
+    } catch (error) {
+      console.error("Error deleting trip folder from Cloudinary:", error);
+      // Continue with trip deletion even if Cloudinary cleanup fails
     }
 
-    // Delete trip
+    // Delete trip from database
     await Trip.findByIdAndDelete(id);
 
     sendSuccessResponse(res, STATUS_CODES.OK, MESSAGES.TRIP_DELETED);

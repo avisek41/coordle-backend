@@ -498,3 +498,41 @@ export const deleteTripImage = async (publicId: string): Promise<void> => {
     throw new Error(`Failed to delete trip image: ${error}`);
   }
 };
+
+/**
+ * Delete entire trip folder from Cloudinary
+ * This removes all images associated with a trip (cover, gallery, etc.)
+ */
+export const deleteTripFolder = async (tripId: string): Promise<void> => {
+  try {
+    // Delete all resources in the trip folder
+    const folderPath = `coordle/trips/${tripId}`;
+
+    // Get all resources in the trip folder
+    const result = await cloudinary.api.resources({
+      type: "upload",
+      prefix: folderPath,
+      max_results: 500, // Adjust based on expected number of images per trip
+    });
+
+    // Delete all resources found in the folder
+    if (result.resources && result.resources.length > 0) {
+      const publicIds = result.resources.map((resource) => resource.public_id);
+
+      // Delete resources in batches (Cloudinary allows up to 100 per request)
+      const batchSize = 100;
+      for (let i = 0; i < publicIds.length; i += batchSize) {
+        const batch = publicIds.slice(i, i + batchSize);
+        await cloudinary.api.delete_resources(batch);
+      }
+
+      console.log(
+        `Deleted ${publicIds.length} resources from trip folder: ${folderPath}`
+      );
+    } else {
+      console.log(`No resources found in trip folder: ${folderPath}`);
+    }
+  } catch (error) {
+    throw new Error(`Failed to delete trip folder: ${error}`);
+  }
+};
