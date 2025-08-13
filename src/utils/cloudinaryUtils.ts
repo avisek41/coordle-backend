@@ -517,7 +517,9 @@ export const deleteTripFolder = async (tripId: string): Promise<void> => {
 
     // Delete all resources found in the folder
     if (result.resources && result.resources.length > 0) {
-      const publicIds = result.resources.map((resource) => resource.public_id);
+      const publicIds = result.resources.map(
+        (resource: any) => resource.public_id
+      );
 
       // Delete resources in batches (Cloudinary allows up to 100 per request)
       const batchSize = 100;
