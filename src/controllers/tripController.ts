@@ -81,9 +81,6 @@ export const createTrip = async (
     }
 
     // Debug: Log user object to see its structure
-    console.log("User object:", JSON.stringify(user, null, 2));
-    console.log("User._id:", user._id);
-    console.log("User._id type:", typeof user._id);
 
     // Generate chat ID
     const chatId = generateChatId();
