@@ -156,6 +156,7 @@ export const uploadDocument = async (
   options?: {
     quality?: string;
     pages?: number;
+    tripId?: string; // Add tripId for trip-specific folder structure
   }
 ): Promise<DocumentUploadData> => {
   try {
@@ -171,8 +172,17 @@ export const uploadDocument = async (
     const isDoc = ["doc", "docx"].includes(fileExtension || "");
 
     let resourceType: "image" | "raw" = "raw";
+
+    // Determine folder structure based on document type
+    let folder: string;
+    if (documentType === "trip-documents" && options?.tripId) {
+      folder = `coordle/trips/${options.tripId}/documents`;
+    } else {
+      folder = `coordle/users/${userId}/documents`;
+    }
+
     let uploadOptions: any = {
-      folder: `coordle/users/${userId}/documents`,
+      folder,
       public_id: fileName,
       overwrite: false,
       resource_type: resourceType,
@@ -259,11 +269,25 @@ export const deleteDocument = async (
   resourceType: "image" | "raw" = "raw"
 ): Promise<void> => {
   try {
-    await cloudinary.uploader.destroy(publicId, {
+    console.log(`Cloudinary deleteDocument called with:`, {
+      publicId: publicId,
+      resourceType: resourceType,
+    });
+
+    const result = await cloudinary.uploader.destroy(publicId, {
       resource_type: resourceType,
     });
-  } catch (error) {
-    throw new Error(`Failed to delete document: ${error}`);
+
+    console.log(`Cloudinary deleteDocument result:`, result);
+  } catch (error: any) {
+    console.error(`Cloudinary deleteDocument error:`, {
+      publicId: publicId,
+      resourceType: resourceType,
+      error: error.message,
+      errorCode: error.http_code,
+      fullError: error,
+    });
+    throw new Error(`Failed to delete document: ${error.message}`);
   }
 };
 
@@ -501,18 +525,17 @@ export const deleteTripImage = async (publicId: string): Promise<void> => {
 
 /**
  * Delete entire trip folder from Cloudinary
- * This removes all images associated with a trip (cover, gallery, etc.)
+ * This removes all resources and the folder structure itself
  */
 export const deleteTripFolder = async (tripId: string): Promise<void> => {
   try {
-    // Delete all resources in the trip folder
     const folderPath = `coordle/trips/${tripId}`;
 
-    // Get all resources in the trip folder
+    // Get all resources in the trip folder (including documents subfolder)
     const result = await cloudinary.api.resources({
       type: "upload",
       prefix: folderPath,
-      max_results: 500, // Adjust based on expected number of images per trip
+      max_results: 1000, // Increased to handle documents + images
     });
 
     // Delete all resources found in the folder
@@ -533,6 +556,29 @@ export const deleteTripFolder = async (tripId: string): Promise<void> => {
       );
     } else {
       console.log(`No resources found in trip folder: ${folderPath}`);
+    }
+
+    // Delete the folder structure itself
+    try {
+      // Delete documents subfolder
+      await cloudinary.api.delete_folder(`${folderPath}/documents`);
+      console.log(`Deleted documents subfolder: ${folderPath}/documents`);
+    } catch (folderError: any) {
+      // Folder might not exist or be empty, which is fine
+      if (folderError.http_code !== 404) {
+        console.error(`Error deleting documents subfolder:`, folderError);
+      }
+    }
+
+    try {
+      // Delete the main trip folder
+      await cloudinary.api.delete_folder(folderPath);
+      console.log(`Deleted main trip folder: ${folderPath}`);
+    } catch (folderError: any) {
+      // Folder might not exist or be empty, which is fine
+      if (folderError.http_code !== 404) {
+        console.error(`Error deleting main trip folder:`, folderError);
+      }
     }
   } catch (error) {
     throw new Error(`Failed to delete trip folder: ${error}`);

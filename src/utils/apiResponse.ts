@@ -108,4 +108,18 @@ export const MESSAGES = {
   TRIP_COVER_IMAGE_REQUIRED: "Trip cover image is required",
   TRIP_COVER_IMAGE_UPLOAD_FAILED: "Failed to upload trip cover image",
   TRIP_ALREADY_EXISTS: "Trip with this ID already exists",
+
+  // Trip Document messages
+  TRIP_DOCUMENT_UPLOADED: "Trip document uploaded successfully",
+  TRIP_DOCUMENT_UPDATED: "Trip document updated successfully",
+  TRIP_DOCUMENT_DELETED: "Trip document deleted successfully",
+  TRIP_DOCUMENT_RETRIEVED: "Trip document retrieved successfully",
+  TRIP_DOCUMENTS_RETRIEVED: "Trip documents retrieved successfully",
+  TRIP_DOCUMENT_NOT_FOUND: "Trip document not found",
+  TRIP_DOCUMENT_ID_REQUIRED: "Trip document ID is required",
+  TRIP_DOCUMENT_FILE_REQUIRED: "Trip document file is required",
+  TRIP_DOCUMENT_TITLE_REQUIRED: "Trip document title is required",
+  TRIP_DOCUMENT_UPLOAD_FAILED: "Failed to upload trip document",
+  TRIP_DOCUMENT_ACCESS_DENIED: "Access denied to trip document",
+  TRIP_NOT_FOUND_FOR_DOCUMENT: "Trip not found for document operation",
 } as const;

@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { Trip, ITrip } from "../models";
+import { Trip, TripDocument, ITrip } from "../models";
 import {
   sendSuccessResponse,
   sendErrorResponse,
@@ -10,6 +10,7 @@ import {
   uploadTripCoverImage,
   deleteTripImage,
   deleteTripFolder,
+  deleteDocument,
 } from "../utils/cloudinaryUtils";
 // Function to generate chat ID in the format: 20 character alphanumeric string
 const generateChatId = (): string => {
@@ -516,10 +517,43 @@ export const deleteTrip = async (
       return;
     }
 
-    // Delete entire trip folder from Cloudinary (includes cover image, gallery images, etc.)
+    // Step 1: Delete all trip documents from Cloudinary and database
+    try {
+      const tripDocuments = await TripDocument.find({ tripId: id });
+
+      // Delete each document from Cloudinary
+      for (const doc of tripDocuments) {
+        try {
+          const isImage = doc.mimeType.startsWith("image/");
+          const isPdf = doc.mimeType === "application/pdf";
+          const resourceType = isImage || isPdf ? "image" : "raw";
+          await deleteDocument(doc.publicId, resourceType);
+        } catch (docError) {
+          console.error(
+            `Error deleting document ${doc._id} from Cloudinary:`,
+            docError
+          );
+          // Continue with other documents even if one fails
+        }
+      }
+
+      // Delete all trip documents from database
+      await TripDocument.deleteMany({ tripId: id });
+      console.log(
+        `Successfully deleted ${tripDocuments.length} trip documents from database`
+      );
+    } catch (error) {
+      console.error("Error deleting trip documents:", error);
+      // Continue with trip deletion even if document cleanup fails
+    }
+
+    // Step 2: Delete entire trip folder structure from Cloudinary
+    // This will remove any remaining files and the folder structure itself
     try {
       await deleteTripFolder(id);
-      console.log(`Successfully deleted trip folder from Cloudinary: ${id}`);
+      console.log(
+        `Successfully deleted entire trip folder structure from Cloudinary: ${id}`
+      );
     } catch (error) {
       console.error("Error deleting trip folder from Cloudinary:", error);
       // Continue with trip deletion even if Cloudinary cleanup fails

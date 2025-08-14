@@ -2273,6 +2273,278 @@
             },
             "description": "Get all trips for a specific user"
           }
+        },
+        {
+          "name": "Upload Trip Document",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "description",
+                  "value": "Detailed itinerary for the trip",
+                  "type": "text"
+                },
+                {
+                  "key": "documentType",
+                  "value": "itinerary",
+                  "type": "text"
+                },
+                {
+                  "key": "isPublic",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "document",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/trips/:tripId/documents",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "trips", ":tripId", "documents"],
+              "variable": [
+                {
+                  "key": "tripId",
+                  "value": "507f1f77bcf86cd799439011"
+                }
+              ]
+            },
+            "description": "Upload a new document for a specific trip (form-data)"
+          }
+        },
+        {
+          "name": "Get Trip Documents",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/trips/:tripId/documents?page=1&limit=10&documentType=itinerary&isPublic=true",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "trips", ":tripId", "documents"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "documentType",
+                  "value": "itinerary"
+                },
+                {
+                  "key": "isPublic",
+                  "value": "true"
+                }
+              ],
+              "variable": [
+                {
+                  "key": "tripId",
+                  "value": "507f1f77bcf86cd799439011"
+                }
+              ]
+            },
+            "description": "Get all documents for a specific trip with filtering options"
+          }
+        },
+        {
+          "name": "Get Trip Document by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/trips/:tripId/documents/:documentId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "trips", ":tripId", "documents", ":documentId"],
+              "variable": [
+                {
+                  "key": "tripId",
+                  "value": "507f1f77bcf86cd799439011"
+                },
+                {
+                  "key": "documentId",
+                  "value": "507f1f77bcf86cd799439012"
+                }
+              ]
+            },
+            "description": "Get a specific trip document by ID"
+          }
+        },
+        {
+          "name": "Update Trip Document (Metadata Only)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Updated Trip Itinerary\",\n  \"description\": \"Updated description for the trip itinerary\",\n  \"documentType\": \"itinerary\",\n  \"isPublic\": true,\n  \"documentNumber\": \"IT-2025-001\",\n  \"issuingAuthority\": \"Travel Agency\",\n  \"countryCode\": \"US\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/trips/:tripId/documents/:documentId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "trips", ":tripId", "documents", ":documentId"],
+              "variable": [
+                {
+                  "key": "tripId",
+                  "value": "507f1f77bcf86cd799439011"
+                },
+                {
+                  "key": "documentId",
+                  "value": "507f1f77bcf86cd799439012"
+                }
+              ]
+            },
+            "description": "Update trip document metadata only (JSON body)"
+          }
+        },
+        {
+          "name": "Update Trip Document (With File Replacement)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "title",
+                  "value": "Updated Trip Itinerary",
+                  "type": "text"
+                },
+                {
+                  "key": "description",
+                  "value": "Updated description with new file",
+                  "type": "text"
+                },
+                {
+                  "key": "documentType",
+                  "value": "itinerary",
+                  "type": "text"
+                },
+                {
+                  "key": "isPublic",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "document",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/trips/:tripId/documents/:documentId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "trips", ":tripId", "documents", ":documentId"],
+              "variable": [
+                {
+                  "key": "tripId",
+                  "value": "507f1f77bcf86cd799439011"
+                },
+                {
+                  "key": "documentId",
+                  "value": "507f1f77bcf86cd799439012"
+                }
+              ]
+            },
+            "description": "Update trip document with new file (form-data - replaces old file)"
+          }
+        },
+        {
+          "name": "Delete Trip Document",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/trips/:tripId/documents/:documentId",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "trips", ":tripId", "documents", ":documentId"],
+              "variable": [
+                {
+                  "key": "tripId",
+                  "value": "507f1f77bcf86cd799439011"
+                },
+                {
+                  "key": "documentId",
+                  "value": "507f1f77bcf86cd799439012"
+                }
+              ]
+            },
+            "description": "Delete a specific trip document"
+          }
+        },
+        {
+          "name": "Get Trip Document Statistics",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/trips/:tripId/documents/stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "trips", ":tripId", "documents", "stats"],
+              "variable": [
+                {
+                  "key": "tripId",
+                  "value": "507f1f77bcf86cd799439011"
+                }
+              ]
+            },
+            "description": "Get statistics for trip documents"
+          }
         }
       ]
     }
