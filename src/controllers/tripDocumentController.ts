@@ -697,16 +697,6 @@ export const deleteTripDocument = async (req: Request, res: Response) => {
       );
     }
 
-    console.log(`Attempting to delete document from Cloudinary:`, {
-      publicId: document.publicId,
-      resourceType: resourceType,
-      mimeType: document.mimeType,
-      isImage: isImage,
-      isPdf: isPdf,
-      fileName: document.originalFileName,
-      fileUrl: document.fileUrl,
-    });
-
     // Delete from Cloudinary
     try {
       await deleteDocument(document.publicId, resourceType);
