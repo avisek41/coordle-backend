@@ -244,6 +244,28 @@
               "path": ["api", "users", "reset-password"]
             }
           }
+        },
+        {
+          "name": "Create Password (For Verified Email Users)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"newpassword123\",\n  \"confirmPassword\": \"newpassword123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/users/create-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "create-password"]
+            }
+          },
+          "description": "Create a password for users who have verified their email but don't have a password yet. This is typically used after email verification flow."
         }
       ]
     },

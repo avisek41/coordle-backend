@@ -1057,7 +1057,24 @@ export const checkEmailVerificationStatus = async (
       return;
     }
 
-    // Email is verified, send to login screen
+    // Email is verified, check if user has password
+    if (!user.password) {
+      // Email verified but no password, send to create password screen
+      sendSuccessResponse(
+        res,
+        STATUS_CODES.OK,
+        "Email verified, password required",
+        {
+          action: "create_password",
+          message: "Please create a password for your account",
+          email: user.email,
+          userId: user._id,
+        }
+      );
+      return;
+    }
+
+    // Email is verified and password exists, send to login screen
     sendSuccessResponse(res, STATUS_CODES.OK, "Email verified", {
       action: "login",
       message: "Please login with your password",
@@ -1120,6 +1137,105 @@ export const checkUserByPhone = async (
     });
   } catch (error) {
     console.error("Check user by phone error:", error);
+    sendErrorResponse(
+      res,
+      STATUS_CODES.INTERNAL_SERVER_ERROR,
+      MESSAGES.INTERNAL_SERVER_ERROR
+    );
+  }
+};
+
+// Create password for verified email user
+export const createPassword = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { email, password, confirmPassword } = req.body;
+
+    if (!email || !password || !confirmPassword) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        "Email, password, and confirm password are required"
+      );
+      return;
+    }
+
+    // Check if passwords match
+    if (password !== confirmPassword) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        MESSAGES.PASSWORDS_DONT_MATCH
+      );
+      return;
+    }
+
+    // Validate password length
+    if (password.length < 6) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        MESSAGES.PASSWORD_TOO_SHORT
+      );
+      return;
+    }
+
+    // Find user by email
+    const user = await User.findOne({ email });
+    if (!user) {
+      sendErrorResponse(res, STATUS_CODES.NOT_FOUND, MESSAGES.USER_NOT_FOUND);
+      return;
+    }
+
+    // Check if email is verified
+    if (!user.isEmailVerified) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.UNAUTHORIZED,
+        "Email must be verified before creating a password"
+      );
+      return;
+    }
+
+    // Check if user already has a password
+    if (user.password) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.CONFLICT,
+        "Password already exists for this user"
+      );
+      return;
+    }
+
+    // Update user with password
+    user.password = password;
+    await user.save();
+
+    // Generate JWT token
+    const tokenPayload: any = {
+      userId: (user._id as any).toString(),
+      userRole: user.userRole,
+    };
+    if (user.email) {
+      tokenPayload.email = user.email;
+    }
+    const token = generateAccessToken(tokenPayload);
+
+    sendSuccessResponse(res, STATUS_CODES.OK, "Password created successfully", {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      phoneNumber: user.phoneNumber,
+      isPhoneVerified: user.isPhoneVerified,
+      isEmailVerified: user.isEmailVerified,
+      isProfileSetup: user.isProfileSetup,
+      userRole: user.userRole,
+      token,
+    });
+  } catch (error) {
+    console.error("Create password error:", error);
     sendErrorResponse(
       res,
       STATUS_CODES.INTERNAL_SERVER_ERROR,

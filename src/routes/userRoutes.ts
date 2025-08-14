@@ -15,6 +15,7 @@ import {
   setupProfile,
   checkEmailVerificationStatus,
   checkUserByPhone,
+  createPassword,
 } from "../controllers/userController";
 import { authenticateToken } from "../middleware/auth";
 
@@ -30,6 +31,7 @@ router.post("/check-user-by-phone", checkUserByPhone);
 // Password reset routes
 router.post("/forgot-password", requestPasswordReset);
 router.post("/reset-password", resetPassword);
+router.post("/create-password", createPassword);
 
 // User profile routes
 router.get("/profile", getUserProfile);
