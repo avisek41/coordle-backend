@@ -51,12 +51,8 @@ router.get("/:tripId/documents", getTripDocuments);
 // Get a specific trip document
 router.get("/:tripId/documents/:documentId", getTripDocumentById);
 
-// Update trip document metadata and optionally replace file
-router.put(
-  "/:tripId/documents/:documentId",
-  uploadSingleTripDocument,
-  updateTripDocument
-);
+// Update trip document original filename
+router.put("/:tripId/documents/:documentId", updateTripDocument);
 
 // Delete a trip document
 router.delete("/:tripId/documents/:documentId", deleteTripDocument);

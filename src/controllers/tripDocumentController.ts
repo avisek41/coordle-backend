@@ -437,22 +437,14 @@ export const getTripDocumentById = async (req: Request, res: Response) => {
 };
 
 /**
- * Update trip document metadata and optionally replace the file
+ * Update trip document original filename only
  * Only the document uploader, trip owner, or hosts can update
  */
 export const updateTripDocument = async (req: Request, res: Response) => {
   try {
     const userId = req.user?.userId;
     const { tripId, documentId } = req.params;
-    const {
-      title,
-      description,
-      documentType,
-      isPublic,
-      documentNumber,
-      issuingAuthority,
-      countryCode,
-    } = req.body;
+    const { originalFileName } = req.body;
 
     if (!userId) {
       return sendErrorResponse(
@@ -515,73 +507,19 @@ export const updateTripDocument = async (req: Request, res: Response) => {
       );
     }
 
-    // Handle file replacement if new file is uploaded
-    if (req.file) {
-      // Delete old file from Cloudinary
-      try {
-        const isImage = document.mimeType.startsWith("image/");
-        const isPdf = document.mimeType === "application/pdf";
-        const resourceType = isImage || isPdf ? "image" : "raw";
-        await deleteDocument(document.publicId, resourceType);
-      } catch (cloudinaryError) {
-        console.error(
-          "Error deleting old document from Cloudinary:",
-          cloudinaryError
-        );
-        // Continue with upload even if deletion fails
-      }
+    // Update originalFileName if provided
+    if (originalFileName !== undefined && originalFileName.trim()) {
+      // Preserve the original file extension
+      const currentExtension = document.originalFileName.split(".").pop();
+      const newFileName = originalFileName.trim();
 
-      // Upload new file to Cloudinary
-      const uploadResult = await uploadDocument(
-        req.file.buffer,
-        tripId,
-        req.file.originalname,
-        "trip-documents",
-        {
-          tripId: tripId,
-        }
-      );
+      // Check if the new filename already has an extension
+      const hasExtension = newFileName.includes(".");
+      const updatedFileName = hasExtension
+        ? newFileName
+        : `${newFileName}.${currentExtension}`;
 
-      // Update document with new file information
-      document.fileName = uploadResult.fileName;
-      document.originalFileName = req.file.originalname;
-      document.fileUrl = uploadResult.url;
-      document.publicId = uploadResult.publicId;
-      document.fileSize = uploadResult.fileSize;
-      document.mimeType = uploadResult.mimeType;
-      if (uploadResult.pages) {
-        document.metadata!.pages = uploadResult.pages;
-      }
-    }
-
-    // Update fields
-    if (title !== undefined) {
-      document.title = title.trim();
-    }
-
-    if (description !== undefined) {
-      document.description = description?.trim();
-    }
-
-    if (documentType !== undefined) {
-      document.documentType = documentType;
-    }
-
-    if (isPublic !== undefined) {
-      document.isPublic = isPublic === "true" || isPublic === true;
-    }
-
-    // Update metadata
-    if (documentNumber !== undefined) {
-      document.metadata!.documentNumber = documentNumber?.trim();
-    }
-
-    if (issuingAuthority !== undefined) {
-      document.metadata!.issuingAuthority = issuingAuthority?.trim();
-    }
-
-    if (countryCode !== undefined) {
-      document.metadata!.countryCode = countryCode?.toUpperCase();
+      document.originalFileName = updatedFileName;
     }
 
     await document.save();

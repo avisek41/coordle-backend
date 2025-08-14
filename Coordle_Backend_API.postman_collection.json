@@ -2397,7 +2397,7 @@
           }
         },
         {
-          "name": "Update Trip Document (Metadata Only)",
+          "name": "Update Trip Document (Original Filename)",
           "request": {
             "method": "PUT",
             "header": [
@@ -2413,7 +2413,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"Updated Trip Itinerary\",\n  \"description\": \"Updated description for the trip itinerary\",\n  \"documentType\": \"itinerary\",\n  \"isPublic\": true,\n  \"documentNumber\": \"IT-2025-001\",\n  \"issuingAuthority\": \"Travel Agency\",\n  \"countryCode\": \"US\"\n}"
+              "raw": "{\n  \"originalFileName\": \"Updated Trip Itinerary.pdf\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/trips/:tripId/documents/:documentId",
@@ -2430,66 +2430,7 @@
                 }
               ]
             },
-            "description": "Update trip document metadata only (JSON body)"
-          }
-        },
-        {
-          "name": "Update Trip Document (With File Replacement)",
-          "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{authToken}}",
-                "type": "text"
-              }
-            ],
-            "body": {
-              "mode": "formdata",
-              "formdata": [
-                {
-                  "key": "title",
-                  "value": "Updated Trip Itinerary",
-                  "type": "text"
-                },
-                {
-                  "key": "description",
-                  "value": "Updated description with new file",
-                  "type": "text"
-                },
-                {
-                  "key": "documentType",
-                  "value": "itinerary",
-                  "type": "text"
-                },
-                {
-                  "key": "isPublic",
-                  "value": "true",
-                  "type": "text"
-                },
-                {
-                  "key": "document",
-                  "type": "file",
-                  "src": []
-                }
-              ]
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/trips/:tripId/documents/:documentId",
-              "host": ["{{baseUrl}}"],
-              "path": ["api", "trips", ":tripId", "documents", ":documentId"],
-              "variable": [
-                {
-                  "key": "tripId",
-                  "value": "507f1f77bcf86cd799439011"
-                },
-                {
-                  "key": "documentId",
-                  "value": "507f1f77bcf86cd799439012"
-                }
-              ]
-            },
-            "description": "Update trip document with new file (form-data - replaces old file)"
+            "description": "Update trip document original filename only (JSON body)"
           }
         },
         {
