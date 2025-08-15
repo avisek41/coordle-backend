@@ -67,7 +67,7 @@
 
 **POST** `/api/users/register`
 
-**Request Body (Email Registration):**
+**Request Body (Email Registration with Password):**
 
 ```json
 {
@@ -76,6 +76,18 @@
   "email": "user@example.com",
   "password": "password123",
   "confirmPassword": "password123",
+  "userRole": "traveller",
+  "phoneNumber": "+1234567890"
+}
+```
+
+**Request Body (Email Registration without Password):**
+
+```json
+{
+  "registrationMethod": "email",
+  "name": "John Doe",
+  "email": "user@example.com",
   "userRole": "traveller",
   "phoneNumber": "+1234567890"
 }

@@ -56,33 +56,45 @@ export const registerUser = async (
 
     // Email-based registration
     if (registrationMethod === "email") {
-      if (!email || !password || !confirmPassword) {
+      if (!email) {
         sendErrorResponse(
           res,
           STATUS_CODES.BAD_REQUEST,
-          MESSAGES.EMAIL_PASSWORD_REQUIRED
+          "Email is required for email-based registration"
         );
         return;
       }
 
-      // Check if passwords match
-      if (password !== confirmPassword) {
-        sendErrorResponse(
-          res,
-          STATUS_CODES.BAD_REQUEST,
-          MESSAGES.PASSWORDS_DONT_MATCH
-        );
-        return;
-      }
+      // Validate password if provided
+      if (password || confirmPassword) {
+        if (!password || !confirmPassword) {
+          sendErrorResponse(
+            res,
+            STATUS_CODES.BAD_REQUEST,
+            "Both password and confirmPassword are required if password is provided"
+          );
+          return;
+        }
 
-      // Validate password length
-      if (password.length < 6) {
-        sendErrorResponse(
-          res,
-          STATUS_CODES.BAD_REQUEST,
-          MESSAGES.PASSWORD_TOO_SHORT
-        );
-        return;
+        // Check if passwords match
+        if (password !== confirmPassword) {
+          sendErrorResponse(
+            res,
+            STATUS_CODES.BAD_REQUEST,
+            MESSAGES.PASSWORDS_DONT_MATCH
+          );
+          return;
+        }
+
+        // Validate password length
+        if (password.length < 6) {
+          sendErrorResponse(
+            res,
+            STATUS_CODES.BAD_REQUEST,
+            MESSAGES.PASSWORD_TOO_SHORT
+          );
+          return;
+        }
       }
 
       // Check if user already exists by email
@@ -99,7 +111,7 @@ export const registerUser = async (
       // Create new user with email
       const newUser = new User({
         email,
-        password, // Hash in real app
+        ...(password && { password }), // Only include password if provided
         userRole: userRole || UserRole.TRAVELLER,
         isPhoneVerified: false,
         isEmailVerified: false, // Email needs to be verified after registration

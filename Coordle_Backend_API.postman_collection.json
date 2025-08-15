@@ -49,7 +49,7 @@
       "name": "Authentication",
       "item": [
         {
-          "name": "Register User (Email)",
+          "name": "Register User (Email with Password)",
           "request": {
             "method": "POST",
             "header": [
@@ -61,6 +61,27 @@
             "body": {
               "mode": "raw",
               "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"password123\",\n  \"confirmPassword\": \"password123\",\n  \"userRole\": \"traveller\",\n  \"registrationMethod\": \"email\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/users/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "register"]
+            }
+          }
+        },
+        {
+          "name": "Register User (Email without Password)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"userRole\": \"traveller\",\n  \"registrationMethod\": \"email\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/users/register",
