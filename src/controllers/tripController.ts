@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { Trip, TripDocument, ITrip } from "../models";
+import { Trip, TripDocument, ITrip, User } from "../models";
 import {
   sendSuccessResponse,
   sendErrorResponse,
@@ -733,6 +733,364 @@ export const getPastTrips = async (
     );
   } catch (error) {
     console.error("Error getting past trips:", error);
+    sendErrorResponse(
+      res,
+      STATUS_CODES.INTERNAL_SERVER_ERROR,
+      MESSAGES.INTERNAL_SERVER_ERROR
+    );
+  }
+};
+
+// Add user to trip (for trip owners/hosts)
+export const addUserToTrip = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { tripId } = req.params;
+    const { userId, userRole = "traveller" } = req.body;
+    const currentUser = (req as any).user;
+
+    if (!currentUser) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.UNAUTHORIZED,
+        "User authentication required"
+      );
+      return;
+    }
+
+    if (!tripId || !userId) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        "Trip ID and User ID are required"
+      );
+      return;
+    }
+
+    // Check if trip exists
+    const trip = await Trip.findById(tripId);
+    if (!trip) {
+      sendErrorResponse(res, STATUS_CODES.NOT_FOUND, MESSAGES.TRIP_NOT_FOUND);
+      return;
+    }
+
+    // Check if current user is trip owner or host
+    const currentUserRef = `/users/${currentUser.userId}`;
+    const isOwner = trip.owner_id === currentUser.userId;
+    const isHost = trip.hosts.includes(currentUserRef);
+
+    if (!isOwner && !isHost) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.FORBIDDEN,
+        "Only trip owners and hosts can add users to trips"
+      );
+      return;
+    }
+
+    // Check if user exists
+    const user = await User.findById(userId);
+    if (!user) {
+      sendErrorResponse(res, STATUS_CODES.NOT_FOUND, "User not found");
+      return;
+    }
+
+    const userRef = `/users/${userId}`;
+
+    // Check if user is already in the trip
+    if (trip.users.includes(userRef)) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.CONFLICT,
+        "User is already part of this trip"
+      );
+      return;
+    }
+
+    // Add user to trip (users array contains all participants)
+    if (!trip.users.includes(userRef)) {
+      trip.users.push(userRef);
+    }
+
+    // If userRole is "host", also add to hosts array
+    if (userRole === "host" && !trip.hosts.includes(userRef)) {
+      trip.hosts.push(userRef);
+    }
+
+    // Update invite count
+    trip.invite_count = (trip.invite_count || 0) + 1;
+
+    await trip.save();
+
+    sendSuccessResponse(
+      res,
+      STATUS_CODES.OK,
+      "User added to trip successfully",
+      {
+        tripId,
+        userId,
+        userRole,
+        userRef,
+      }
+    );
+  } catch (error) {
+    console.error("Error adding user to trip:", error);
+    sendErrorResponse(
+      res,
+      STATUS_CODES.INTERNAL_SERVER_ERROR,
+      MESSAGES.INTERNAL_SERVER_ERROR
+    );
+  }
+};
+
+// Remove user from trip (for trip owners/hosts)
+export const removeUserFromTrip = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { tripId } = req.params;
+    const { userId } = req.body;
+    const currentUser = (req as any).user;
+
+    if (!currentUser) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.UNAUTHORIZED,
+        "User authentication required"
+      );
+      return;
+    }
+
+    if (!tripId || !userId) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        "Trip ID and User ID are required"
+      );
+      return;
+    }
+
+    // Check if trip exists
+    const trip = await Trip.findById(tripId);
+    if (!trip) {
+      sendErrorResponse(res, STATUS_CODES.NOT_FOUND, MESSAGES.TRIP_NOT_FOUND);
+      return;
+    }
+
+    // Check if current user is trip owner or host
+    const currentUserRef = `/users/${currentUser.userId}`;
+    const isOwner = trip.owner_id === currentUser.userId;
+    const isHost = trip.hosts.includes(currentUserRef);
+
+    if (!isOwner && !isHost) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.FORBIDDEN,
+        "Only trip owners and hosts can remove users from trips"
+      );
+      return;
+    }
+
+    // Prevent removing the trip owner
+    if (trip.owner_id === userId) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.FORBIDDEN,
+        "Cannot remove trip owner from the trip"
+      );
+      return;
+    }
+
+    const userRef = `/users/${userId}`;
+
+    // Check if user is in the trip
+    if (!trip.users.includes(userRef)) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.NOT_FOUND,
+        "User is not part of this trip"
+      );
+      return;
+    }
+
+    // Remove user from trip (remove from both users and hosts arrays)
+    trip.users = trip.users.filter((user) => user !== userRef);
+    trip.hosts = trip.hosts.filter((host) => host !== userRef);
+
+    // Update invite count (decrease if user was added via invite)
+    if (trip.invite_count > 0) {
+      trip.invite_count = Math.max(0, trip.invite_count - 1);
+    }
+
+    await trip.save();
+
+    sendSuccessResponse(
+      res,
+      STATUS_CODES.OK,
+      "User removed from trip successfully",
+      {
+        tripId,
+        userId,
+        userRef,
+      }
+    );
+  } catch (error) {
+    console.error("Error removing user from trip:", error);
+    sendErrorResponse(
+      res,
+      STATUS_CODES.INTERNAL_SERVER_ERROR,
+      MESSAGES.INTERNAL_SERVER_ERROR
+    );
+  }
+};
+
+
+
+// Check if user is in trip
+export const checkUserInTrip = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { tripId } = req.params;
+    const { userId } = req.query;
+    const currentUser = (req as any).user;
+
+    if (!currentUser) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.UNAUTHORIZED,
+        "User authentication required"
+      );
+      return;
+    }
+
+    if (!tripId) {
+      sendErrorResponse(res, STATUS_CODES.BAD_REQUEST, "Trip ID is required");
+      return;
+    }
+
+    // Check if trip exists
+    const trip = await Trip.findById(tripId);
+    if (!trip) {
+      sendErrorResponse(res, STATUS_CODES.NOT_FOUND, MESSAGES.TRIP_NOT_FOUND);
+      return;
+    }
+
+    const userRef = `/users/${userId || currentUser.userId}`;
+    const isInTrip = trip.users.includes(userRef);
+    const isHost = trip.hosts.includes(userRef);
+    const isOwner = trip.owner_id === (userId || currentUser.userId);
+
+    sendSuccessResponse(
+      res,
+      STATUS_CODES.OK,
+      "User trip status checked successfully",
+      {
+        isInTrip,
+        isHost,
+        isOwner,
+        userRef,
+        tripId,
+      }
+    );
+  } catch (error) {
+    console.error("Error checking user in trip:", error);
+    sendErrorResponse(
+      res,
+      STATUS_CODES.INTERNAL_SERVER_ERROR,
+      MESSAGES.INTERNAL_SERVER_ERROR
+    );
+  }
+};
+
+// Get trip participants
+export const getTripParticipants = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { tripId } = req.params;
+    const currentUser = (req as any).user;
+
+    if (!currentUser) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.UNAUTHORIZED,
+        "User authentication required"
+      );
+      return;
+    }
+
+    if (!tripId) {
+      sendErrorResponse(res, STATUS_CODES.BAD_REQUEST, "Trip ID is required");
+      return;
+    }
+
+    // Check if trip exists
+    const trip = await Trip.findById(tripId);
+    if (!trip) {
+      sendErrorResponse(res, STATUS_CODES.NOT_FOUND, MESSAGES.TRIP_NOT_FOUND);
+      return;
+    }
+
+    // Check if current user is part of the trip
+    const currentUserRef = `/users/${currentUser.userId}`;
+    const isOwner = trip.owner_id === currentUser.userId;
+    const isHost = trip.hosts.includes(currentUserRef);
+    const isTraveler = trip.users.includes(currentUserRef);
+
+    if (!isOwner && !isHost && !isTraveler) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.FORBIDDEN,
+        "You don't have access to this trip"
+      );
+      return;
+    }
+
+    // Get all user IDs from the trip
+    const userIds = [
+      trip.owner_id,
+      ...trip.hosts.map((host) => host.replace("/users/", "")),
+      ...trip.users.map((user) => user.replace("/users/", "")),
+    ];
+
+    // Remove duplicates
+    const uniqueUserIds = [...new Set(userIds)];
+
+    // Get user details
+    const users = await User.find({ _id: { $in: uniqueUserIds } }).select(
+      "name firstName lastName email phoneNumber userRole profilePhoto"
+    );
+
+    // Organize users by role
+    const participants = {
+      owner: users.find((user: any) => user._id.toString() === trip.owner_id),
+      hosts: users.filter(
+        (user: any) =>
+          trip.hosts.includes(`/users/${user._id}`) &&
+          user._id.toString() !== trip.owner_id
+      ),
+      travelers: users.filter(
+        (user: any) =>
+          trip.users.includes(`/users/${user._id}`) &&
+          !trip.hosts.includes(`/users/${user._id}`) &&
+          user._id.toString() !== trip.owner_id
+      ),
+    };
+
+    sendSuccessResponse(
+      res,
+      STATUS_CODES.OK,
+      "Trip participants retrieved successfully",
+      participants
+    );
+  } catch (error) {
+    console.error("Error getting trip participants:", error);
     sendErrorResponse(
       res,
       STATUS_CODES.INTERNAL_SERVER_ERROR,

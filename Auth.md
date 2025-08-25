@@ -67,6 +67,8 @@
 
 **POST** `/api/users/register`
 
+**Note**: For trip invites, use `isInvited: true` flag to send welcome email automatically.
+
 **Request Body (Email Registration with Password):**
 
 ```json
@@ -81,6 +83,19 @@
 }
 ```
 
+**Request Body (Email Registration with Password - Invited):**
+
+```json
+{
+  "email": "invited@example.com",
+  "password": "password123",
+  "confirmPassword": "password123",
+  "userRole": "traveller",
+  "registrationMethod": "email",
+  "isInvited": true
+}
+```
+
 **Request Body (Email Registration without Password):**
 
 ```json
@@ -90,6 +105,17 @@
   "email": "user@example.com",
   "userRole": "traveller",
   "phoneNumber": "+1234567890"
+}
+```
+
+**Request Body (Email Registration without Password - Invited):**
+
+```json
+{
+  "email": "invited@example.com",
+  "userRole": "traveller",
+  "registrationMethod": "email",
+  "isInvited": true
 }
 ```
 

@@ -70,6 +70,27 @@
           }
         },
         {
+          "name": "Register User (Email with Password - Invited)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"invited@example.com\",\n  \"password\": \"password123\",\n  \"confirmPassword\": \"password123\",\n  \"userRole\": \"traveller\",\n  \"registrationMethod\": \"email\",\n  \"isInvited\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/users/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "register"]
+            }
+          }
+        },
+        {
           "name": "Register User (Email without Password)",
           "request": {
             "method": "POST",
@@ -82,6 +103,27 @@
             "body": {
               "mode": "raw",
               "raw": "{\n  \"email\": \"user@example.com\",\n  \"userRole\": \"traveller\",\n  \"registrationMethod\": \"email\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/users/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "register"]
+            }
+          }
+        },
+        {
+          "name": "Register User (Email without Password - Invited)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"invited@example.com\",\n  \"userRole\": \"traveller\",\n  \"registrationMethod\": \"email\",\n  \"isInvited\": true\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/users/register",
@@ -2317,6 +2359,125 @@
             "description": "Get all trips for a specific user"
           }
         },
+        {
+          "name": "Add User to Trip",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"64f1a2b3c4d5e6f7g8h9i0j1\",\n  \"userRole\": \"traveller\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/trips/:tripId/participants",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "trips", ":tripId", "participants"],
+              "variable": [
+                {
+                  "key": "tripId",
+                  "value": "64f1a2b3c4d5e6f7g8h9i0j1"
+                }
+              ]
+            },
+            "description": "Add a user to a trip (trip owner/host only)"
+          }
+        },
+        {
+          "name": "Remove User from Trip",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"64f1a2b3c4d5e6f7g8h9i0j1\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/trips/:tripId/participants",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "trips", ":tripId", "participants"],
+              "variable": [
+                {
+                  "key": "tripId",
+                  "value": "64f1a2b3c4d5e6f7g8h9i0j1"
+                }
+              ]
+            },
+            "description": "Remove a user from a trip (trip owner/host only)"
+          }
+        },
+        {
+          "name": "Get Trip Participants",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/trips/:tripId/participants",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "trips", ":tripId", "participants"],
+              "variable": [
+                {
+                  "key": "tripId",
+                  "value": "64f1a2b3c4d5e6f7g8h9i0j1"
+                }
+              ]
+            },
+            "description": "Get all participants of a trip"
+          }
+        },
+        {
+          "name": "Check User in Trip",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/trips/:tripId/check-user?userId=64f1a2b3c4d5e6f7g8h9i0j1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "trips", ":tripId", "check-user"],
+              "query": [
+                {
+                  "key": "userId",
+                  "value": "64f1a2b3c4d5e6f7g8h9i0j1"
+                }
+              ],
+              "variable": [
+                {
+                  "key": "tripId",
+                  "value": "64f1a2b3c4d5e6f7g8h9i0j1"
+                }
+              ]
+            },
+            "description": "Check if a user is part of a trip and their role"
+          }
+        },
+
         {
           "name": "Upload Trip Document",
           "request": {

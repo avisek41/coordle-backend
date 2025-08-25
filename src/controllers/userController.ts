@@ -9,7 +9,11 @@ import {
 } from "../models";
 import { sendVerificationCode as sendTwilioSMS } from "../config/twilio";
 import { generateAccessToken } from "../config/jwt";
-import { sendPasswordResetEmail, generateResetToken } from "../config/email";
+import {
+  sendPasswordResetEmail,
+  generateResetToken,
+  sendWelcomeEmail,
+} from "../config/email";
 import {
   sendSuccessResponse,
   sendErrorResponse,
@@ -28,8 +32,14 @@ export const registerUser = async (
   res: Response
 ): Promise<void> => {
   try {
-    const { email, password, confirmPassword, userRole, registrationMethod } =
-      req.body;
+    const {
+      email,
+      password,
+      confirmPassword,
+      userRole,
+      registrationMethod,
+      isInvited,
+    } = req.body;
 
     // Validate registration method
     if (
@@ -119,6 +129,20 @@ export const registerUser = async (
 
       const savedUser = await newUser.save();
 
+      // Send welcome email if this is an invited registration
+      if (isInvited && savedUser.email) {
+        try {
+          const userName = savedUser.name || savedUser.firstName || "there";
+          await sendWelcomeEmail(savedUser.email, userName);
+          console.log(
+            `Welcome email sent to ${savedUser.email} for invited user`
+          );
+        } catch (error) {
+          console.error("Error sending welcome email:", error);
+          // Don't fail the registration if welcome email fails
+        }
+      }
+
       // Generate JWT token
       const tokenPayload: any = {
         userId: (savedUser._id as any).toString(),
@@ -144,6 +168,14 @@ export const registerUser = async (
           userRole: savedUser.userRole,
           createdAt: savedUser.createdAt,
           token,
+          // Additional info for invited users
+          ...(isInvited && {
+            inviteInfo: {
+              isInvited: true,
+              welcomeEmailSent: true,
+              userRef: `/users/${savedUser._id}`,
+            },
+          }),
         }
       );
       return;

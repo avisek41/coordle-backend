@@ -8,6 +8,10 @@ import {
   updateTrip,
   deleteTrip,
   getTripsByUser,
+  addUserToTrip,
+  removeUserFromTrip,
+  getTripParticipants,
+  checkUserInTrip,
 } from "../controllers/tripController";
 import { authenticateToken } from "../middleware/auth";
 
@@ -46,5 +50,11 @@ router.post(
 
 // User-specific trip routes
 router.get("/user/:userId", getTripsByUser);
+
+// Trip participant management routes
+router.post("/:tripId/participants", authenticateToken, addUserToTrip);
+router.delete("/:tripId/participants", authenticateToken, removeUserFromTrip);
+router.get("/:tripId/participants", authenticateToken, getTripParticipants);
+router.get("/:tripId/check-user", authenticateToken, checkUserInTrip);
 
 export default router;
