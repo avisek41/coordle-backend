@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import mongoose from "mongoose";
 import { Trip, TripDocument, ITrip, User } from "../models";
 import {
   sendSuccessResponse,
@@ -205,6 +206,16 @@ export const uploadTripCoverImageController = async (
       return;
     }
 
+    // Validate ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        "Invalid trip ID format"
+      );
+      return;
+    }
+
     // Check if trip exists
     const trip = await Trip.findById(id);
     if (!trip) {
@@ -337,6 +348,16 @@ export const getTripById = async (
       return;
     }
 
+    // Validate ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        "Invalid trip ID format"
+      );
+      return;
+    }
+
     const trip = await Trip.findById(id);
 
     if (!trip) {
@@ -389,6 +410,16 @@ export const updateTrip = async (
         res,
         STATUS_CODES.BAD_REQUEST,
         MESSAGES.TRIP_ID_REQUIRED
+      );
+      return;
+    }
+
+    // Validate ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        "Invalid trip ID format"
       );
       return;
     }
@@ -506,6 +537,16 @@ export const deleteTrip = async (
         res,
         STATUS_CODES.BAD_REQUEST,
         MESSAGES.TRIP_ID_REQUIRED
+      );
+      return;
+    }
+
+    // Validate ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        "Invalid trip ID format"
       );
       return;
     }
@@ -769,6 +810,25 @@ export const addUserToTrip = async (
       return;
     }
 
+    // Validate ObjectId formats
+    if (!mongoose.Types.ObjectId.isValid(tripId)) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        "Invalid trip ID format"
+      );
+      return;
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        "Invalid user ID format"
+      );
+      return;
+    }
+
     // Check if trip exists
     const trip = await Trip.findById(tripId);
     if (!trip) {
@@ -845,6 +905,165 @@ export const addUserToTrip = async (
   }
 };
 
+// Add multiple users to trip (for bulk invites)
+export const addMultipleUsersToTrip = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { tripId } = req.params;
+    const { users } = req.body;
+    const currentUser = (req as any).user;
+
+    if (!currentUser) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.UNAUTHORIZED,
+        "User authentication required"
+      );
+      return;
+    }
+
+    if (!tripId || !users || !Array.isArray(users) || users.length === 0) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        "Trip ID and users array are required"
+      );
+      return;
+    }
+
+    // Validate ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(tripId)) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        "Invalid trip ID format"
+      );
+      return;
+    }
+
+    // Check if trip exists
+    const trip = await Trip.findById(tripId);
+    if (!trip) {
+      sendErrorResponse(res, STATUS_CODES.NOT_FOUND, MESSAGES.TRIP_NOT_FOUND);
+      return;
+    }
+
+    // Check if current user is trip owner or host
+    const currentUserRef = `/users/${currentUser.userId}`;
+    const isOwner = trip.owner_id === currentUser.userId;
+    const isHost = trip.hosts.includes(currentUserRef);
+
+    if (!isOwner && !isHost) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.FORBIDDEN,
+        "Only trip owners and hosts can add users to trips"
+      );
+      return;
+    }
+
+    const results = [];
+    const errors = [];
+    let addedCount = 0;
+
+    // Process each user
+    for (const userData of users) {
+      try {
+        const { userId, userRole = "traveller" } = userData;
+
+        if (!userId) {
+          errors.push({
+            userId: "undefined",
+            error: "User ID is required",
+          });
+          continue;
+        }
+
+        // Check if user exists
+        const user = await User.findById(userId);
+        if (!user) {
+          errors.push({
+            userId,
+            error: "User not found",
+          });
+          continue;
+        }
+
+        const userRef = `/users/${userId}`;
+
+        // Check if user is already in the trip
+        if (trip.users.includes(userRef)) {
+          results.push({
+            userId,
+            email: user.email,
+            success: true,
+            alreadyInTrip: true,
+            message: "User is already part of this trip",
+          });
+          continue;
+        }
+
+        // Add user to trip (users array contains all participants)
+        trip.users.push(userRef);
+
+        // If userRole is "host", also add to hosts array
+        if (userRole === "host" && !trip.hosts.includes(userRef)) {
+          trip.hosts.push(userRef);
+        }
+
+        results.push({
+          userId,
+          email: user.email,
+          success: true,
+          alreadyInTrip: false,
+          userRole,
+          message: "User added to trip successfully",
+        });
+
+        addedCount++;
+      } catch (error) {
+        console.error(`Error adding user ${userData.userId} to trip:`, error);
+        errors.push({
+          userId: userData.userId,
+          error: (error as Error).message || "Failed to add user to trip",
+        });
+      }
+    }
+
+    // Update invite count
+    trip.invite_count = (trip.invite_count || 0) + addedCount;
+
+    // Save trip changes
+    await trip.save();
+
+    sendSuccessResponse(
+      res,
+      STATUS_CODES.OK,
+      "Bulk add users to trip completed",
+      {
+        tripId,
+        results,
+        errors,
+        summary: {
+          total: users.length,
+          added: addedCount,
+          alreadyInTrip: results.filter((r) => r.alreadyInTrip).length,
+          failed: errors.length,
+        },
+      }
+    );
+  } catch (error) {
+    console.error("Error adding multiple users to trip:", error);
+    sendErrorResponse(
+      res,
+      STATUS_CODES.INTERNAL_SERVER_ERROR,
+      MESSAGES.INTERNAL_SERVER_ERROR
+    );
+  }
+};
+
 // Remove user from trip (for trip owners/hosts)
 export const removeUserFromTrip = async (
   req: Request,
@@ -869,6 +1088,25 @@ export const removeUserFromTrip = async (
         res,
         STATUS_CODES.BAD_REQUEST,
         "Trip ID and User ID are required"
+      );
+      return;
+    }
+
+    // Validate ObjectId formats
+    if (!mongoose.Types.ObjectId.isValid(tripId)) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        "Invalid trip ID format"
+      );
+      return;
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        "Invalid user ID format"
       );
       return;
     }
@@ -947,8 +1185,6 @@ export const removeUserFromTrip = async (
   }
 };
 
-
-
 // Check if user is in trip
 export const checkUserInTrip = async (
   req: Request,
@@ -970,6 +1206,16 @@ export const checkUserInTrip = async (
 
     if (!tripId) {
       sendErrorResponse(res, STATUS_CODES.BAD_REQUEST, "Trip ID is required");
+      return;
+    }
+
+    // Validate ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(tripId)) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        "Invalid trip ID format"
+      );
       return;
     }
 
@@ -1027,6 +1273,16 @@ export const getTripParticipants = async (
 
     if (!tripId) {
       sendErrorResponse(res, STATUS_CODES.BAD_REQUEST, "Trip ID is required");
+      return;
+    }
+
+    // Validate ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(tripId)) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        "Invalid trip ID format"
+      );
       return;
     }
 

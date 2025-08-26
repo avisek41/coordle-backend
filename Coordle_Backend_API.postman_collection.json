@@ -259,6 +259,98 @@
             }
           },
           "description": "Check if a user exists by phone number. This helps determine whether to use registration or login flow."
+        },
+        {
+          "name": "Check User by Email",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/users/check-email",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "check-email"]
+            }
+          },
+          "description": "Check if a user exists by email address. This helps determine whether to use registration or login flow for trip invites."
+        },
+        {
+          "name": "Check Multiple Users by Emails",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"emails\": [\n    \"user1@example.com\",\n    \"user2@example.com\",\n    \"user3@example.com\"\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/users/check-emails",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "check-emails"]
+            }
+          },
+          "description": "Check if multiple users exist by email addresses. Useful for bulk trip invites."
+        },
+        {
+          "name": "Register Multiple Users",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"users\": [\n    {\n      \"email\": \"user1@example.com\",\n      \"userRole\": \"traveller\",\n      \"isInvited\": true\n    },\n    {\n      \"email\": \"user2@example.com\",\n      \"userRole\": \"host\",\n      \"isInvited\": true\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/users/register-multiple",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "register-multiple"]
+            }
+          },
+          "description": "Register multiple users at once. Useful for bulk trip invites."
+        },
+        {
+          "name": "Invite Users to Trip (Combined API)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tripId\": \"64f1a2b3c4d5e6f7g8h9i0j1\",\n  \"users\": [\n    {\n      \"email\": \"user1@example.com\",\n      \"userRole\": \"traveller\",\n      \"isInvited\": true\n    },\n    {\n      \"email\": \"user2@example.com\",\n      \"userRole\": \"host\",\n      \"isInvited\": true\n    },\n    {\n      \"email\": \"sahooavisek60@gmail.com\",\n      \"userRole\": \"traveller\",\n      \"isInvited\": true\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/users/invite-to-trip",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "invite-to-trip"]
+            }
+          },
+          "description": "Combined API: Register users (if needed) and add to trip in one call. Most efficient for bulk invites."
         }
       ]
     },
@@ -2389,6 +2481,38 @@
               ]
             },
             "description": "Add a user to a trip (trip owner/host only)"
+          }
+        },
+        {
+          "name": "Add Multiple Users to Trip",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"users\": [\n    {\n      \"userId\": \"64f1a2b3c4d5e6f7g8h9i0j1\",\n      \"userRole\": \"traveller\"\n    },\n    {\n      \"userId\": \"64f1a2b3c4d5e6f7g8h9i0j2\",\n      \"userRole\": \"host\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/trips/:tripId/participants/bulk",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "trips", ":tripId", "participants", "bulk"],
+              "variable": [
+                {
+                  "key": "tripId",
+                  "value": "64f1a2b3c4d5e6f7g8h9i0j1"
+                }
+              ]
+            },
+            "description": "Add multiple users to a trip at once (trip owner/host only)"
           }
         },
         {

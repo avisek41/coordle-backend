@@ -1,11 +1,13 @@
 import { Request, Response } from "express";
 import dotenv from "dotenv";
+import mongoose from "mongoose";
 import {
   User,
   UserRole,
   IUser,
   PhoneVerification,
   PasswordReset,
+  Trip,
 } from "../models";
 import { sendVerificationCode as sendTwilioSMS } from "../config/twilio";
 import { generateAccessToken } from "../config/jwt";
@@ -479,6 +481,25 @@ export const getUserById = async (
   try {
     const { id } = req.params;
 
+    if (!id) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        "User ID is required"
+      );
+      return;
+    }
+
+    // Validate ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        "Invalid user ID format"
+      );
+      return;
+    }
+
     const user = await User.findById(id).select("-__v");
     if (!user) {
       sendErrorResponse(res, STATUS_CODES.NOT_FOUND, MESSAGES.USER_NOT_FOUND);
@@ -505,6 +526,25 @@ export const updateUser = async (
   try {
     const { id } = req.params;
     const { name, email, userRole } = req.body;
+
+    if (!id) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        "User ID is required"
+      );
+      return;
+    }
+
+    // Validate ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        "Invalid user ID format"
+      );
+      return;
+    }
 
     const existingUser = await User.findById(id);
     if (!existingUser) {
@@ -558,6 +598,25 @@ export const deleteUser = async (
 ): Promise<void> => {
   try {
     const { id } = req.params;
+
+    if (!id) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        "User ID is required"
+      );
+      return;
+    }
+
+    // Validate ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        "Invalid user ID format"
+      );
+      return;
+    }
 
     const user = await User.findByIdAndDelete(id);
     if (!user) {
@@ -625,6 +684,16 @@ export const getUserProfile = async (
         res,
         STATUS_CODES.BAD_REQUEST,
         MESSAGES.USER_ID_REQUIRED
+      );
+      return;
+    }
+
+    // Validate ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        "Invalid user ID format"
       );
       return;
     }
@@ -1181,6 +1250,600 @@ export const checkUserByPhone = async (
     });
   } catch (error) {
     console.error("Check user by phone error:", error);
+    sendErrorResponse(
+      res,
+      STATUS_CODES.INTERNAL_SERVER_ERROR,
+      MESSAGES.INTERNAL_SERVER_ERROR
+    );
+  }
+};
+
+// Check if user exists by email
+export const checkUserByEmail = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      sendErrorResponse(res, STATUS_CODES.BAD_REQUEST, "Email is required");
+      return;
+    }
+
+    // Find user by email
+    const user = await User.findOne({ email }).select(
+      "_id email name userRole"
+    );
+
+    if (user) {
+      sendSuccessResponse(res, STATUS_CODES.OK, "User found", {
+        exists: true,
+        userId: user._id,
+        email: user.email,
+        name: user.name,
+        userRole: user.userRole,
+      });
+    } else {
+      sendSuccessResponse(res, STATUS_CODES.OK, "User not found", {
+        exists: false,
+        email,
+      });
+    }
+  } catch (error) {
+    console.error("Check user by email error:", error);
+    sendErrorResponse(
+      res,
+      STATUS_CODES.INTERNAL_SERVER_ERROR,
+      MESSAGES.INTERNAL_SERVER_ERROR
+    );
+  }
+};
+
+// Check multiple users by emails (for bulk invites)
+export const checkUsersByEmails = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { emails } = req.body;
+
+    if (!emails || !Array.isArray(emails) || emails.length === 0) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        "Emails array is required and must not be empty"
+      );
+      return;
+    }
+
+    // Validate email format for all emails
+    const emailRegex = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/;
+    const invalidEmails = emails.filter((email) => !emailRegex.test(email));
+
+    if (invalidEmails.length > 0) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        `Invalid email format: ${invalidEmails.join(", ")}`
+      );
+      return;
+    }
+
+    // Find all users by emails
+    const users = await User.find({ email: { $in: emails } }).select(
+      "_id email name userRole"
+    );
+
+    // Create a map of existing users
+    const existingUsersMap = new Map();
+    users.forEach((user) => {
+      existingUsersMap.set(user.email, {
+        exists: true,
+        userId: user._id,
+        email: user.email,
+        name: user.name,
+        userRole: user.userRole,
+      });
+    });
+
+    // Create response for all emails
+    const results = emails.map((email) => {
+      if (existingUsersMap.has(email)) {
+        return existingUsersMap.get(email);
+      } else {
+        return {
+          exists: false,
+          email,
+        };
+      }
+    });
+
+    const existingCount = users.length;
+    const newCount = emails.length - existingCount;
+
+    sendSuccessResponse(res, STATUS_CODES.OK, "Users check completed", {
+      results,
+      summary: {
+        total: emails.length,
+        existing: existingCount,
+        new: newCount,
+      },
+    });
+  } catch (error) {
+    console.error("Check users by emails error:", error);
+    sendErrorResponse(
+      res,
+      STATUS_CODES.INTERNAL_SERVER_ERROR,
+      MESSAGES.INTERNAL_SERVER_ERROR
+    );
+  }
+};
+
+// Register multiple users (for bulk invites) - Enhanced version that checks existence internally
+export const registerMultipleUsers = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { users } = req.body;
+
+    if (!users || !Array.isArray(users) || users.length === 0) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        "Users array is required and must not be empty"
+      );
+      return;
+    }
+
+    const results = [];
+    const errors = [];
+    const existingUsers = [];
+    const newUsers = [];
+
+    // Step 1: Extract emails and validate format
+    const emails = users.map((user) => user.email).filter(Boolean);
+
+    // Validate email format for all emails
+    const emailRegex = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/;
+    const invalidEmails = emails.filter((email) => !emailRegex.test(email));
+
+    if (invalidEmails.length > 0) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        `Invalid email format: ${invalidEmails.join(", ")}`
+      );
+      return;
+    }
+
+    // Step 2: Check which users already exist
+    const existingUsersFromDB = await User.find({
+      email: { $in: emails },
+    }).select("_id email name userRole");
+
+    // Create a map of existing users
+    const existingUsersMap = new Map();
+    existingUsersFromDB.forEach((user) => {
+      existingUsersMap.set(user.email, {
+        exists: true,
+        userId: user._id,
+        email: user.email,
+        name: user.name,
+        userRole: user.userRole,
+      });
+    });
+
+    // Step 3: Process each user
+    for (const userData of users) {
+      try {
+        const {
+          email,
+          password,
+          confirmPassword,
+          userRole = "traveller",
+          registrationMethod = "email",
+          isInvited = true,
+        } = userData;
+
+        // Validate required fields
+        if (!email) {
+          errors.push({
+            email: "undefined",
+            error: "Email is required",
+          });
+          continue;
+        }
+
+        // Check if user already exists
+        if (existingUsersMap.has(email)) {
+          const existingUser = existingUsersMap.get(email);
+          existingUsers.push(existingUser);
+          results.push({
+            email,
+            success: true,
+            exists: true,
+            userId: existingUser.userId,
+            message: "User already exists",
+          });
+          continue;
+        }
+
+        // Validate password if provided
+        if (password || confirmPassword) {
+          if (!password || !confirmPassword) {
+            errors.push({
+              email,
+              error:
+                "Both password and confirmPassword are required if password is provided",
+            });
+            continue;
+          }
+
+          if (password !== confirmPassword) {
+            errors.push({
+              email,
+              error: "Password and confirm password do not match",
+            });
+            continue;
+          }
+
+          if (password.length < 6) {
+            errors.push({
+              email,
+              error: "Password must be at least 6 characters long",
+            });
+            continue;
+          }
+        }
+
+        // Create new user
+        const newUser = new User({
+          email,
+          ...(password && { password }),
+          userRole,
+          isPhoneVerified: false,
+          isEmailVerified: false,
+        });
+
+        const savedUser = await newUser.save();
+
+        // Send welcome email if this is an invited registration
+        if (isInvited && savedUser.email) {
+          try {
+            const userName = savedUser.name || savedUser.firstName || "there";
+            await sendWelcomeEmail(savedUser.email, userName);
+            console.log(
+              `Welcome email sent to ${savedUser.email} for invited user`
+            );
+          } catch (error) {
+            console.error("Error sending welcome email:", error);
+            // Don't fail the registration if welcome email fails
+          }
+        }
+
+        newUsers.push({
+          exists: false,
+          userId: savedUser._id,
+          email: savedUser.email,
+          name: savedUser.name,
+          userRole: savedUser.userRole,
+        });
+
+        results.push({
+          email,
+          success: true,
+          exists: false,
+          userId: savedUser._id,
+          message: "User registered successfully",
+        });
+      } catch (error) {
+        console.error(`Error registering user ${userData.email}:`, error);
+        errors.push({
+          email: userData.email,
+          error: (error as Error).message || "Registration failed",
+        });
+      }
+    }
+
+    const successCount = results.filter((r) => r.success).length;
+    const errorCount = errors.length;
+
+    sendSuccessResponse(res, STATUS_CODES.OK, "Bulk registration completed", {
+      results,
+      errors,
+      summary: {
+        total: users.length,
+        successful: successCount,
+        failed: errorCount,
+        existing: existingUsers.length,
+        new: newUsers.length,
+      },
+      // Provide all user IDs (both existing and new) for easy trip addition
+      allUsers: [...existingUsers, ...newUsers],
+    });
+  } catch (error) {
+    console.error("Bulk registration error:", error);
+    sendErrorResponse(
+      res,
+      STATUS_CODES.INTERNAL_SERVER_ERROR,
+      MESSAGES.INTERNAL_SERVER_ERROR
+    );
+  }
+};
+
+// Combined API: Register users and add to trip in one call
+export const inviteUsersToTrip = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { tripId, users } = req.body;
+    const currentUser = (req as any).user;
+
+    if (!currentUser) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.UNAUTHORIZED,
+        "User authentication required"
+      );
+      return;
+    }
+
+    if (!tripId || !users || !Array.isArray(users) || users.length === 0) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        "Trip ID and users array are required"
+      );
+      return;
+    }
+
+    // Validate tripId format
+    if (!mongoose.Types.ObjectId.isValid(tripId)) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        "Invalid trip ID format"
+      );
+      return;
+    }
+
+    // Step 1: Check if trip exists and user has permission
+    const trip = await Trip.findById(tripId);
+    if (!trip) {
+      sendErrorResponse(res, STATUS_CODES.NOT_FOUND, MESSAGES.TRIP_NOT_FOUND);
+      return;
+    }
+
+    // Check if current user is trip owner or host
+    const currentUserRef = `/users/${currentUser.userId}`;
+    const isOwner = trip.owner_id === currentUser.userId;
+    const isHost = trip.hosts.includes(currentUserRef);
+
+    if (!isOwner && !isHost) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.FORBIDDEN,
+        "Only trip owners and hosts can invite users to trips"
+      );
+      return;
+    }
+
+    const results = [];
+    const errors = [];
+    const existingUsers = [];
+    const newUsers = [];
+    let addedToTripCount = 0;
+
+    // Step 2: Extract emails and validate format
+    const emails = users.map((user) => user.email).filter(Boolean);
+
+    // Validate email format for all emails
+    const emailRegex = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/;
+    const invalidEmails = emails.filter((email) => !emailRegex.test(email));
+
+    if (invalidEmails.length > 0) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        `Invalid email format: ${invalidEmails.join(", ")}`
+      );
+      return;
+    }
+
+    // Step 3: Check which users already exist
+    const existingUsersFromDB = await User.find({
+      email: { $in: emails },
+    }).select("_id email name userRole");
+
+    // Create a map of existing users
+    const existingUsersMap = new Map();
+    existingUsersFromDB.forEach((user) => {
+      existingUsersMap.set(user.email, {
+        exists: true,
+        userId: user._id,
+        email: user.email,
+        name: user.name,
+        userRole: user.userRole,
+      });
+    });
+
+    // Step 4: Process each user
+    for (const userData of users) {
+      try {
+        const {
+          email,
+          password,
+          confirmPassword,
+          userRole = "traveller",
+          registrationMethod = "email",
+          isInvited = true,
+        } = userData;
+
+        // Validate required fields
+        if (!email) {
+          errors.push({
+            email: "undefined",
+            error: "Email is required",
+          });
+          continue;
+        }
+
+        let userId;
+        let isNewUser = false;
+
+        // Check if user already exists
+        if (existingUsersMap.has(email)) {
+          const existingUser = existingUsersMap.get(email);
+          existingUsers.push(existingUser);
+          userId = existingUser.userId;
+          results.push({
+            email,
+            success: true,
+            exists: true,
+            userId: existingUser.userId,
+            message: "User already exists",
+          });
+        } else {
+          // Validate password if provided
+          if (password || confirmPassword) {
+            if (!password || !confirmPassword) {
+              errors.push({
+                email,
+                error:
+                  "Both password and confirmPassword are required if password is provided",
+              });
+              continue;
+            }
+
+            if (password !== confirmPassword) {
+              errors.push({
+                email,
+                error: "Password and confirm password do not match",
+              });
+              continue;
+            }
+
+            if (password.length < 6) {
+              errors.push({
+                email,
+                error: "Password must be at least 6 characters long",
+              });
+              continue;
+            }
+          }
+
+          // Create new user
+          const newUser = new User({
+            email,
+            ...(password && { password }),
+            userRole,
+            isPhoneVerified: false,
+            isEmailVerified: false,
+          });
+
+          const savedUser = await newUser.save();
+
+          // Send welcome email if this is an invited registration
+          if (isInvited && savedUser.email) {
+            try {
+              const userName = savedUser.name || savedUser.firstName || "there";
+              await sendWelcomeEmail(savedUser.email, userName);
+              console.log(
+                `Welcome email sent to ${savedUser.email} for invited user`
+              );
+            } catch (error) {
+              console.error("Error sending welcome email:", error);
+              // Don't fail the registration if welcome email fails
+            }
+          }
+
+          newUsers.push({
+            exists: false,
+            userId: savedUser._id,
+            email: savedUser.email,
+            name: savedUser.name,
+            userRole: savedUser.userRole,
+          });
+
+          userId = savedUser._id;
+          isNewUser = true;
+
+          results.push({
+            email,
+            success: true,
+            exists: false,
+            userId: savedUser._id,
+            message: "User registered successfully",
+          });
+        }
+
+        // Step 5: Add user to trip
+        const userRef = `/users/${userId}`;
+
+        // Check if user is already in the trip
+        if (trip.users.includes(userRef)) {
+          results.push({
+            email,
+            success: true,
+            alreadyInTrip: true,
+            message: "User is already part of this trip",
+          });
+        } else {
+          // Add user to trip
+          trip.users.push(userRef);
+
+          // If userRole is "host", also add to hosts array
+          if (userRole === "host" && !trip.hosts.includes(userRef)) {
+            trip.hosts.push(userRef);
+          }
+
+          addedToTripCount++;
+
+          results.push({
+            email,
+            success: true,
+            alreadyInTrip: false,
+            userRole,
+            message: isNewUser
+              ? "User registered and added to trip"
+              : "User added to trip",
+          });
+        }
+      } catch (error) {
+        console.error(`Error processing user ${userData.email}:`, error);
+        errors.push({
+          email: userData.email,
+          error: (error as Error).message || "Processing failed",
+        });
+      }
+    }
+
+    // Step 6: Update trip invite count and save
+    trip.invite_count = (trip.invite_count || 0) + addedToTripCount;
+    await trip.save();
+
+    const successCount = results.filter((r) => r.success).length;
+    const errorCount = errors.length;
+
+    sendSuccessResponse(res, STATUS_CODES.OK, "Bulk invite completed", {
+      tripId,
+      results,
+      errors,
+      summary: {
+        total: users.length,
+        successful: successCount,
+        failed: errorCount,
+        existing: existingUsers.length,
+        new: newUsers.length,
+        addedToTrip: addedToTripCount,
+        alreadyInTrip: results.filter((r) => r.alreadyInTrip).length,
+      },
+    });
+  } catch (error) {
+    console.error("Bulk invite error:", error);
     sendErrorResponse(
       res,
       STATUS_CODES.INTERNAL_SERVER_ERROR,

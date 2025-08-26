@@ -9,6 +9,7 @@ import {
   deleteTrip,
   getTripsByUser,
   addUserToTrip,
+  addMultipleUsersToTrip,
   removeUserFromTrip,
   getTripParticipants,
   checkUserInTrip,
@@ -53,6 +54,11 @@ router.get("/user/:userId", getTripsByUser);
 
 // Trip participant management routes
 router.post("/:tripId/participants", authenticateToken, addUserToTrip);
+router.post(
+  "/:tripId/participants/bulk",
+  authenticateToken,
+  addMultipleUsersToTrip
+);
 router.delete("/:tripId/participants", authenticateToken, removeUserFromTrip);
 router.get("/:tripId/participants", authenticateToken, getTripParticipants);
 router.get("/:tripId/check-user", authenticateToken, checkUserInTrip);

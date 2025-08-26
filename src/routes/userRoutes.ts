@@ -16,6 +16,10 @@ import {
   checkEmailVerificationStatus,
   checkUserByPhone,
   createPassword,
+  checkUserByEmail,
+  checkUsersByEmails,
+  registerMultipleUsers,
+  inviteUsersToTrip,
 } from "../controllers/userController";
 import { authenticateToken } from "../middleware/auth";
 
@@ -46,5 +50,13 @@ router.delete("/:id", deleteUser);
 
 // Role-based routes
 router.get("/role/:role", getUsersByRole);
+
+// User utility routes
+router.post("/check-email", checkUserByEmail);
+router.post("/check-emails", checkUsersByEmails);
+router.post("/register-multiple", registerMultipleUsers);
+router.post("/invite-to-trip", authenticateToken, inviteUsersToTrip);
+router.post("/check-phone", checkUserByPhone);
+router.post("/check-email-verification", checkEmailVerificationStatus);
 
 export default router;
