@@ -2601,6 +2601,30 @@
             "description": "Check if a user is part of a trip and their role"
           }
         },
+        {
+          "name": "Get Trip Members",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/trips/:tripId/members",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "trips", ":tripId", "members"],
+              "variable": [
+                {
+                  "key": "tripId",
+                  "value": "64f1a2b3c4d5e6f7g8h9i0j1"
+                }
+              ]
+            },
+            "description": "Get all trip members with email/phone and userId for members page"
+          }
+        },
 
         {
           "name": "Upload Trip Document",

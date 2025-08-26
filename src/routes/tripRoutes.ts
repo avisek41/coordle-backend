@@ -13,6 +13,7 @@ import {
   removeUserFromTrip,
   getTripParticipants,
   checkUserInTrip,
+  getTripMembers,
 } from "../controllers/tripController";
 import { authenticateToken } from "../middleware/auth";
 
@@ -62,5 +63,8 @@ router.post(
 router.delete("/:tripId/participants", authenticateToken, removeUserFromTrip);
 router.get("/:tripId/participants", authenticateToken, getTripParticipants);
 router.get("/:tripId/check-user", authenticateToken, checkUserInTrip);
+
+// Trip members page route
+router.get("/:tripId/members", authenticateToken, getTripMembers);
 
 export default router;

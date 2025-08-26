@@ -1354,3 +1354,102 @@ export const getTripParticipants = async (
     );
   }
 };
+
+// Get trip members for members page (email/phone and userId)
+export const getTripMembers = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { tripId } = req.params;
+    const currentUser = (req as any).user;
+
+    if (!currentUser) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.UNAUTHORIZED,
+        "User authentication required"
+      );
+      return;
+    }
+
+    if (!tripId) {
+      sendErrorResponse(res, STATUS_CODES.BAD_REQUEST, "Trip ID is required");
+      return;
+    }
+
+    // Validate ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(tripId)) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        "Invalid trip ID format"
+      );
+      return;
+    }
+
+    // Check if trip exists
+    const trip = await Trip.findById(tripId);
+    if (!trip) {
+      sendErrorResponse(res, STATUS_CODES.NOT_FOUND, MESSAGES.TRIP_NOT_FOUND);
+      return;
+    }
+
+    // Check if current user is part of the trip
+    const currentUserRef = `/users/${currentUser.userId}`;
+    const isOwner = trip.owner_id === currentUser.userId;
+    const isHost = trip.hosts.includes(currentUserRef);
+    const isTraveler = trip.users.includes(currentUserRef);
+
+    if (!isOwner && !isHost && !isTraveler) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.FORBIDDEN,
+        "You don't have access to this trip"
+      );
+      return;
+    }
+
+    // Get all user IDs from the trip
+    const userIds = [
+      trip.owner_id,
+      ...trip.hosts.map((host) => host.replace("/users/", "")),
+      ...trip.users.map((user) => user.replace("/users/", "")),
+    ];
+
+    // Remove duplicates
+    const uniqueUserIds = [...new Set(userIds)];
+
+    // Get user details with only required fields for members page
+    const users = await User.find({ _id: { $in: uniqueUserIds } }).select(
+      "_id email phoneNumber userRole"
+    );
+
+    // Format response for members page
+    const members = users.map((user: any) => ({
+      userId: user._id.toString(),
+      email: user.email || null,
+      phoneNumber: user.phoneNumber || null,
+      userRole: user.userRole,
+    }));
+
+    sendSuccessResponse(
+      res,
+      STATUS_CODES.OK,
+      "Trip members retrieved successfully",
+      {
+        tripId: trip._id,
+        tripName: trip.name,
+        members,
+        totalMembers: members.length,
+      }
+    );
+  } catch (error) {
+    console.error("Error getting trip members:", error);
+    sendErrorResponse(
+      res,
+      STATUS_CODES.INTERNAL_SERVER_ERROR,
+      MESSAGES.INTERNAL_SERVER_ERROR
+    );
+  }
+};
