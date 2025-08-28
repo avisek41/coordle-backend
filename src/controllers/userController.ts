@@ -482,11 +482,7 @@ export const getUserById = async (
     const { id } = req.params;
 
     if (!id) {
-      sendErrorResponse(
-        res,
-        STATUS_CODES.BAD_REQUEST,
-        "User ID is required"
-      );
+      sendErrorResponse(res, STATUS_CODES.BAD_REQUEST, "User ID is required");
       return;
     }
 
@@ -528,11 +524,7 @@ export const updateUser = async (
     const { name, email, userRole } = req.body;
 
     if (!id) {
-      sendErrorResponse(
-        res,
-        STATUS_CODES.BAD_REQUEST,
-        "User ID is required"
-      );
+      sendErrorResponse(res, STATUS_CODES.BAD_REQUEST, "User ID is required");
       return;
     }
 
@@ -600,11 +592,7 @@ export const deleteUser = async (
     const { id } = req.params;
 
     if (!id) {
-      sendErrorResponse(
-        res,
-        STATUS_CODES.BAD_REQUEST,
-        "User ID is required"
-      );
+      sendErrorResponse(res, STATUS_CODES.BAD_REQUEST, "User ID is required");
       return;
     }
 
@@ -1637,12 +1625,19 @@ export const inviteUsersToTrip = async (
     const newUsers = [];
     let addedToTripCount = 0;
 
-    // Step 2: Extract emails and validate format
+    // Step 2: Extract emails and phone numbers, validate format
     const emails = users.map((user) => user.email).filter(Boolean);
+    const phoneNumbers = users.map((user) => user.phoneNumber).filter(Boolean);
 
     // Validate email format for all emails
     const emailRegex = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/;
     const invalidEmails = emails.filter((email) => !emailRegex.test(email));
+
+    // Validate phone number format for all phone numbers
+    const phoneRegex = /^\+[1-9]\d{7,14}$/;
+    const invalidPhoneNumbers = phoneNumbers.filter(
+      (phone) => !phoneRegex.test(phone)
+    );
 
     if (invalidEmails.length > 0) {
       sendErrorResponse(
@@ -1653,21 +1648,45 @@ export const inviteUsersToTrip = async (
       return;
     }
 
-    // Step 3: Check which users already exist
-    const existingUsersFromDB = await User.find({
-      email: { $in: emails },
-    }).select("_id email name userRole");
+    if (invalidPhoneNumbers.length > 0) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        `Invalid phone number format: ${invalidPhoneNumbers.join(", ")}`
+      );
+      return;
+    }
 
-    // Create a map of existing users
-    const existingUsersMap = new Map();
+    // Step 3: Check which users already exist (by email or phone)
+    const existingUsersFromDB = await User.find({
+      $or: [{ email: { $in: emails } }, { phoneNumber: { $in: phoneNumbers } }],
+    }).select("_id email phoneNumber name userRole");
+
+    // Create maps of existing users
+    const existingUsersByEmail = new Map();
+    const existingUsersByPhone = new Map();
+
     existingUsersFromDB.forEach((user) => {
-      existingUsersMap.set(user.email, {
-        exists: true,
-        userId: user._id,
-        email: user.email,
-        name: user.name,
-        userRole: user.userRole,
-      });
+      if (user.email) {
+        existingUsersByEmail.set(user.email, {
+          exists: true,
+          userId: user._id,
+          email: user.email,
+          phoneNumber: user.phoneNumber,
+          name: user.name,
+          userRole: user.userRole,
+        });
+      }
+      if (user.phoneNumber) {
+        existingUsersByPhone.set(user.phoneNumber, {
+          exists: true,
+          userId: user._id,
+          email: user.email,
+          phoneNumber: user.phoneNumber,
+          name: user.name,
+          userRole: user.userRole,
+        });
+      }
     });
 
     // Step 4: Process each user
@@ -1675,32 +1694,58 @@ export const inviteUsersToTrip = async (
       try {
         const {
           email,
+          phoneNumber,
           password,
           confirmPassword,
           userRole = "traveller",
-          registrationMethod = "email",
+          registrationMethod,
           isInvited = true,
         } = userData;
 
-        // Validate required fields
-        if (!email) {
+        // Validate that at least one contact method is provided
+        if (!email && !phoneNumber) {
           errors.push({
-            email: "undefined",
-            error: "Email is required",
+            contact: "undefined",
+            error: "Either email or phoneNumber is required",
           });
           continue;
         }
 
+        // Validate phone number format if provided
+        if (phoneNumber) {
+          // Validate full phone number format (must include country code)
+          const fullPhoneRegex = /^\+[1-9]\d{7,14}$/;
+          if (!fullPhoneRegex.test(phoneNumber)) {
+            errors.push({
+              contact: phoneNumber,
+              error:
+                "Invalid phone number format. Must be like +1234567890 with country code",
+            });
+            continue;
+          }
+        }
+
+        // Determine registration method based on provided contact info
+        const actualRegistrationMethod =
+          registrationMethod || (email ? "email" : "phone");
+
         let userId;
         let isNewUser = false;
+        let existingUser = null;
 
-        // Check if user already exists
-        if (existingUsersMap.has(email)) {
-          const existingUser = existingUsersMap.get(email);
+        // Check if user already exists by email or phone
+        if (email && existingUsersByEmail.has(email)) {
+          existingUser = existingUsersByEmail.get(email);
+        } else if (phoneNumber && existingUsersByPhone.has(phoneNumber)) {
+          existingUser = existingUsersByPhone.get(phoneNumber);
+        }
+
+        if (existingUser) {
           existingUsers.push(existingUser);
           userId = existingUser.userId;
           results.push({
-            email,
+            contact: email || phoneNumber,
+            contactType: email ? "email" : "phone",
             success: true,
             exists: true,
             userId: existingUser.userId,
@@ -1711,7 +1756,7 @@ export const inviteUsersToTrip = async (
           if (password || confirmPassword) {
             if (!password || !confirmPassword) {
               errors.push({
-                email,
+                contact: email || phoneNumber,
                 error:
                   "Both password and confirmPassword are required if password is provided",
               });
@@ -1720,7 +1765,7 @@ export const inviteUsersToTrip = async (
 
             if (password !== confirmPassword) {
               errors.push({
-                email,
+                contact: email || phoneNumber,
                 error: "Password and confirm password do not match",
               });
               continue;
@@ -1728,7 +1773,7 @@ export const inviteUsersToTrip = async (
 
             if (password.length < 6) {
               errors.push({
-                email,
+                contact: email || phoneNumber,
                 error: "Password must be at least 6 characters long",
               });
               continue;
@@ -1736,27 +1781,45 @@ export const inviteUsersToTrip = async (
           }
 
           // Create new user
-          const newUser = new User({
-            email,
-            ...(password && { password }),
+          const newUserData: any = {
             userRole,
             isPhoneVerified: false,
             isEmailVerified: false,
-          });
+          };
 
+          if (email) {
+            newUserData.email = email;
+          }
+          if (phoneNumber) {
+            newUserData.phoneNumber = phoneNumber;
+          }
+          if (password) {
+            newUserData.password = password;
+          }
+
+          const newUser = new User(newUserData);
           const savedUser = await newUser.save();
 
-          // Send welcome email if this is an invited registration
-          if (isInvited && savedUser.email) {
+          // Send welcome notification if this is an invited registration
+          if (isInvited) {
             try {
               const userName = savedUser.name || savedUser.firstName || "there";
-              await sendWelcomeEmail(savedUser.email, userName);
-              console.log(
-                `Welcome email sent to ${savedUser.email} for invited user`
-              );
+
+              if (savedUser.email) {
+                await sendWelcomeEmail(savedUser.email, userName);
+                console.log(
+                  `Welcome email sent to ${savedUser.email} for invited user`
+                );
+              }
+
+              // Note: SMS welcome message would need to be implemented
+              // if (savedUser.phoneNumber) {
+              //   await sendWelcomeSMS(savedUser.phoneNumber, userName);
+              //   console.log(`Welcome SMS sent to ${savedUser.phoneNumber} for invited user`);
+              // }
             } catch (error) {
-              console.error("Error sending welcome email:", error);
-              // Don't fail the registration if welcome email fails
+              console.error("Error sending welcome notification:", error);
+              // Don't fail the registration if welcome notification fails
             }
           }
 
@@ -1764,6 +1827,7 @@ export const inviteUsersToTrip = async (
             exists: false,
             userId: savedUser._id,
             email: savedUser.email,
+            phoneNumber: savedUser.phoneNumber,
             name: savedUser.name,
             userRole: savedUser.userRole,
           });
@@ -1772,7 +1836,8 @@ export const inviteUsersToTrip = async (
           isNewUser = true;
 
           results.push({
-            email,
+            contact: email || phoneNumber,
+            contactType: email ? "email" : "phone",
             success: true,
             exists: false,
             userId: savedUser._id,
@@ -1786,7 +1851,8 @@ export const inviteUsersToTrip = async (
         // Check if user is already in the trip
         if (trip.users.includes(userRef)) {
           results.push({
-            email,
+            contact: email || phoneNumber,
+            contactType: email ? "email" : "phone",
             success: true,
             alreadyInTrip: true,
             message: "User is already part of this trip",
@@ -1801,21 +1867,15 @@ export const inviteUsersToTrip = async (
           }
 
           addedToTripCount++;
-
-          results.push({
-            email,
-            success: true,
-            alreadyInTrip: false,
-            userRole,
-            message: isNewUser
-              ? "User registered and added to trip"
-              : "User added to trip",
-          });
         }
       } catch (error) {
-        console.error(`Error processing user ${userData.email}:`, error);
+        console.error(
+          `Error processing user ${userData.email || userData.phoneNumber}:`,
+          error
+        );
         errors.push({
-          email: userData.email,
+          contact: userData.email || userData.phoneNumber,
+          contactType: userData.email ? "email" : "phone",
           error: (error as Error).message || "Processing failed",
         });
       }

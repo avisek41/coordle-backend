@@ -1,198 +1,249 @@
-# Trip Invite Flow - Option 1 (Separate Steps)
+# Trip Invite Flow - Enhanced with Phone Number Support
 
 ## Overview
 
-This document describes the **Option 1** approach for inviting users to trips using separate API calls for registration and trip addition.
+This document describes the enhanced trip invite flow that now supports both **email and phone number** invites using the combined API.
 
-## Flow Summary
-
-1. **Step 1**: Register user with `isInvited: true` flag
-2. **Step 2**: Add user to trip using the returned user ID
-
-## Step 1: Register User with Invite Flag
+## Enhanced API: Invite Users to Trip (Email + Phone)
 
 ### API Endpoint
 
 ```
-POST /api/users/register
+POST /api/users/invite-to-trip
 ```
 
 ### Request Body
 
+The API now supports three types of invites:
+
+#### 1. Email-Only Invites
+
 ```json
 {
-  "email": "invited@example.com",
-  "userRole": "traveller",
-  "registrationMethod": "email",
-  "isInvited": true
+  "tripId": "64f1a2b3c4d5e6f7g8h9i0j1",
+  "users": [
+    {
+      "email": "user1@example.com",
+      "userRole": "traveller",
+      "isInvited": true
+    },
+    {
+      "email": "user2@example.com",
+      "userRole": "host",
+      "isInvited": true
+    }
+  ]
+}
+```
+
+#### 2. Phone-Only Invites
+
+```json
+{
+  "tripId": "64f1a2b3c4d5e6f7g8h9i0j1",
+  "users": [
+    {
+      "phoneNumber": "+1234567890",
+      "userRole": "traveller",
+      "isInvited": true
+    },
+    {
+      "phoneNumber": "+447911123456",
+      "userRole": "host",
+      "isInvited": true
+    },
+    {
+      "phoneNumber": "+919876543210",
+      "userRole": "traveller",
+      "isInvited": true
+    }
+  ]
+}
+```
+
+#### 3. Mixed Email & Phone Invites
+
+```json
+{
+  "tripId": "64f1a2b3c4d5e6f7g8h9i0j1",
+  "users": [
+    {
+      "email": "user1@example.com",
+      "userRole": "traveller",
+      "isInvited": true
+    },
+    {
+      "phoneNumber": "+1234567890",
+      "userRole": "host",
+      "isInvited": true
+    },
+    {
+      "email": "user3@example.com",
+      "phoneNumber": "+447911123456",
+      "userRole": "traveller",
+      "isInvited": true
+    }
+  ]
 }
 ```
 
 ### What Happens
 
-- ✅ User gets registered in the system
+#### For Email Users:
+
+- ✅ User gets registered in the system (if new)
 - ✅ **Welcome email is automatically sent** (because `isInvited: true`)
-- ✅ User gets a JWT token for immediate access
+- ✅ User gets added to trip
 - ✅ Response includes user ID and invite info
+
+#### For Phone Users:
+
+- ✅ User gets registered in the system (if new)
+- ✅ **Phone verification status set to false** (needs verification)
+- ✅ User gets added to trip
+- ✅ Response includes user ID and invite info
+- ⚠️ **SMS welcome message** (needs implementation)
 
 ### Response
 
 ```json
 {
   "success": true,
-  "message": "User registered successfully with email",
+  "message": "Bulk invite completed",
   "data": {
-    "id": "64f1a2b3c4d5e6f7g8h9i0j1",
-    "email": "invited@example.com",
-    "name": "",
-    "userRole": "traveller",
-    "isPhoneVerified": false,
-    "isEmailVerified": false,
-    "isProfileSetup": false,
-    "createdAt": "2024-01-01T00:00:00.000Z",
-    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-    "inviteInfo": {
-      "isInvited": true,
-      "welcomeEmailSent": true,
-      "userRef": "/users/64f1a2b3c4d5e6f7g8h9i0j1"
+    "tripId": "64f1a2b3c4d5e6f7g8h9i0j1",
+    "results": [
+      {
+        "contact": "user1@example.com",
+        "contactType": "email",
+        "success": true,
+        "exists": false,
+        "userId": "64f1a2b3c4d5e6f7g8h9i0j2",
+        "message": "User registered successfully"
+      },
+      {
+        "contact": "+1234567890",
+        "contactType": "phone",
+        "success": true,
+        "exists": true,
+        "userId": "64f1a2b3c4d5e6f7g8h9i0j3",
+        "message": "User already exists"
+      }
+    ],
+    "errors": [],
+    "summary": {
+      "total": 2,
+      "successful": 2,
+      "failed": 0,
+      "existing": 1,
+      "new": 1,
+      "addedToTrip": 2,
+      "alreadyInTrip": 0
     }
   }
 }
 ```
 
-## Step 2: Add User to Trip
+## Validation Rules
 
-### API Endpoint
+### Email Validation
 
-```
-POST /api/trips/:tripId/participants
-```
+- Must be valid email format: `user@domain.com`
+- Required if no phone number provided
 
-### Request Body
+### Phone Number Validation
+
+- Must be valid international format with country code: `+1234567890`
+- **Country code is REQUIRED** (must start with `+`)
+- Supports formats: `+1234567890`, `+447911123456`, `+919876543210`
+- Required if no email provided
+
+### User Requirements
+
+- At least one contact method (email OR phone) is required
+- Both email and phone can be provided for the same user
+- `userRole` defaults to "traveller" if not specified
+- `isInvited` defaults to `true` if not specified
+
+## Duplicate User Handling
+
+### Email Duplicates
+
+- If user exists by email, reuses existing user
+- No duplicate user created
+
+### Phone Duplicates
+
+- If user exists by phone number, reuses existing user
+- No duplicate user created
+
+### Mixed Duplicates
+
+- If user exists by either email or phone, reuses existing user
+- System checks both contact methods for existing users
+
+## Trip Addition Logic
+
+### User Addition
+
+- All users (new and existing) get added to trip's `users` array
+- If `userRole` is "host", also added to `hosts` array
+- Trip's `invite_count` increases for each new addition
+
+### Duplicate Trip Addition
+
+- If user is already in trip, marked as `alreadyInTrip: true`
+- No duplicate addition to trip
+
+## Error Handling
+
+### Validation Errors
 
 ```json
 {
-  "userId": "64f1a2b3c4d5e6f7g8h9i0j1",
-  "userRole": "traveller"
+  "success": false,
+  "message": "Invalid phone number format: 1234567890",
+  "statusCode": 400
 }
 ```
 
-### What Happens
+### Permission Errors
 
-- ✅ User gets added to trip's `users` array
-- ✅ If role is "host", also added to `hosts` array
-- ✅ Trip's `invite_count` increases
-- ✅ User can now access the trip
+```json
+{
+  "success": false,
+  "message": "Only trip owners and hosts can invite users to trips",
+  "statusCode": 403
+}
+```
 
-### Response
+### Processing Errors
 
 ```json
 {
   "success": true,
-  "message": "User added to trip successfully",
   "data": {
-    "tripId": "64f1a2b3c4d5e6f7g8h9i0j1",
-    "userId": "64f1a2b3c4d5e6f7g8h9i0j1",
-    "userRole": "traveller",
-    "userRef": "/users/64f1a2b3c4d5e6f7g8h9i0j1"
+    "results": [...],
+    "errors": [
+      {
+        "contact": "+1234567890",
+        "contactType": "phone",
+        "error": "Phone number already exists"
+      }
+    ]
   }
 }
 ```
 
-## Frontend Implementation
-
-### JavaScript Example
-
-```javascript
-// Step 1: Register user with invite flag
-const registerResponse = await fetch("/api/users/register", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-  },
-  body: JSON.stringify({
-    email: "invited@example.com",
-    userRole: "traveller",
-    registrationMethod: "email",
-    isInvited: true,
-  }),
-});
-
-const userData = await registerResponse.json();
-const userId = userData.data.id;
-
-// Step 2: Add user to trip
-const addToTripResponse = await fetch(`/api/trips/${tripId}/participants`, {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${authToken}`,
-  },
-  body: JSON.stringify({
-    userId: userId,
-    userRole: "traveller",
-  }),
-});
-
-const tripData = await addToTripResponse.json();
-console.log("User successfully invited to trip!");
-```
-
-## Error Handling
-
-### Registration Errors
-
-- **Email already exists**: User already registered
-- **Invalid email format**: Email validation failed
-- **Password validation**: If password provided, must meet requirements
-
-### Trip Addition Errors
-
-- **User not found**: User ID doesn't exist
-- **User already in trip**: User is already a participant
-- **Permission denied**: Only trip owners/hosts can add users
-- **Trip not found**: Invalid trip ID
-
-## User Roles
-
-### Available Roles
-
-- **`traveller`**: Regular trip participant (default)
-- **`host`**: Trip host with additional permissions
-
-### Role Behavior
-
-- **Travellers**: Added to `users` array only
-- **Hosts**: Added to both `users` and `hosts` arrays
-
-## Trip Schema Structure
-
-```typescript
-{
-  owner_id: string,        // Trip owner (single user)
-  users: string[],         // ALL participants (travelers + hosts)
-  hosts: string[],         // ONLY hosts (subset of users)
-  invite_count: number     // Number of invited users
-}
-```
-
-## Benefits of Option 1
-
-- ✅ **Clear separation**: Registration and trip addition are separate concerns
-- ✅ **Flexible**: Owner can register user first, then decide later if to add to trip
-- ✅ **Reusable**: Registration API can be used for non-trip invites too
-- ✅ **Better error handling**: Can handle registration failure separately from trip addition
-- ✅ **Frontend control**: Frontend can show different UI states for each step
-
 ## API Endpoints Summary
 
-| Endpoint                          | Method | Description                    |
-| --------------------------------- | ------ | ------------------------------ |
-| `/api/users/register`             | POST   | Register user with invite flag |
-| `/api/trips/:tripId/participants` | POST   | Add user to trip               |
-| `/api/trips/:tripId/participants` | DELETE | Remove user from trip          |
-| `/api/trips/:tripId/participants` | GET    | Get trip participants          |
-| `/api/trips/:tripId/check-user`   | GET    | Check if user is in trip       |
+| Endpoint                          | Method | Description                                     |
+| --------------------------------- | ------ | ----------------------------------------------- |
+| `/api/users/invite-to-trip`       | POST   | **NEW**: Bulk invite with email & phone support |
+| `/api/trips/:tripId/participants` | POST   | Add existing user to trip                       |
+| `/api/trips/:tripId/participants` | DELETE | Remove user from trip                           |
+| `/api/trips/:tripId/participants` | GET    | Get trip participants                           |
+| `/api/trips/:tripId/check-user`   | GET    | Check if user is in trip                        |
 
 ## Testing
 
@@ -200,9 +251,24 @@ console.log("User successfully invited to trip!");
 
 The Postman collection includes examples for:
 
-- Register User (Email with Password - Invited)
-- Register User (Email without Password - Invited)
-- Add User to Trip
-- Remove User from Trip
-- Get Trip Participants
-- Check User in Trip
+- **Invite Users to Trip (Email Only)**
+- **Invite Users to Trip (Phone Only)**
+- **Invite Users to Trip (Mixed Email & Phone)**
+
+### Test Scenarios
+
+1. **Email-only bulk invite**
+2. **Phone-only bulk invite**
+3. **Mixed email and phone invite**
+4. **Duplicate user handling**
+5. **Invalid contact format validation**
+6. **Permission validation**
+
+## Benefits of Enhanced API
+
+- ✅ **Flexible**: Support both email and phone invites
+- ✅ **Efficient**: Single API call for bulk invites
+- ✅ **Smart**: Handles duplicates automatically
+- ✅ **Comprehensive**: Validates all contact formats
+- ✅ **Scalable**: Works with any number of users
+- ✅ **User-friendly**: Clear error messages and status

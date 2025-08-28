@@ -327,7 +327,7 @@
           "description": "Register multiple users at once. Useful for bulk trip invites."
         },
         {
-          "name": "Invite Users to Trip (Combined API)",
+          "name": "Invite Users to Trip (Email Only)",
           "request": {
             "method": "POST",
             "header": [
@@ -350,7 +350,59 @@
               "path": ["api", "users", "invite-to-trip"]
             }
           },
-          "description": "Combined API: Register users (if needed) and add to trip in one call. Most efficient for bulk invites."
+          "description": "Invite users to trip using email addresses only."
+        },
+        {
+          "name": "Invite Users to Trip (Phone Only)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tripId\": \"64f1a2b3c4d5e6f7g8h9i0j1\",\n  \"users\": [\n    {\n      \"phoneNumber\": \"+1234567890\",\n      \"userRole\": \"traveller\",\n      \"isInvited\": true\n    },\n    {\n      \"phoneNumber\": \"+447911123456\",\n      \"userRole\": \"host\",\n      \"isInvited\": true\n    },\n    {\n      \"phoneNumber\": \"+919876543210\",\n      \"userRole\": \"traveller\",\n      \"isInvited\": true\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/users/invite-to-trip",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "invite-to-trip"]
+            }
+          },
+          "description": "Invite users to trip using phone numbers with country code included."
+        },
+        {
+          "name": "Invite Users to Trip (Mixed Email & Phone)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tripId\": \"64f1a2b3c4d5e6f7g8h9i0j1\",\n  \"users\": [\n    {\n      \"email\": \"user1@example.com\",\n      \"userRole\": \"traveller\",\n      \"isInvited\": true\n    },\n    {\n      \"phoneNumber\": \"+1234567890\",\n      \"userRole\": \"host\",\n      \"isInvited\": true\n    },\n    {\n      \"email\": \"user3@example.com\",\n      \"phoneNumber\": \"+447911123456\",\n      \"userRole\": \"traveller\",\n      \"isInvited\": true\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/users/invite-to-trip",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "invite-to-trip"]
+            }
+          },
+          "description": "Invite users to trip using both email and phone numbers in the same request."
         }
       ]
     },
