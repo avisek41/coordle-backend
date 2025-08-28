@@ -192,7 +192,8 @@ The API now supports three types of invites:
 
 ### Duplicate Trip Addition
 
-- If user is already in trip, marked as `alreadyInTrip: true`
+- If user is already in trip, returns an error
+- Error message: "User is already part of this trip"
 - No duplicate addition to trip
 
 ## Error Handling
@@ -228,7 +229,12 @@ The API now supports three types of invites:
       {
         "contact": "+1234567890",
         "contactType": "phone",
-        "error": "Phone number already exists"
+        "error": "User is already part of this trip"
+      },
+      {
+        "contact": "user@example.com",
+        "contactType": "email",
+        "error": "Invalid phone number format. Must be like +1234567890 with country code"
       }
     ]
   }

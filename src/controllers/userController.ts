@@ -1850,13 +1850,12 @@ export const inviteUsersToTrip = async (
 
         // Check if user is already in the trip
         if (trip.users.includes(userRef)) {
-          results.push({
+          errors.push({
             contact: email || phoneNumber,
             contactType: email ? "email" : "phone",
-            success: true,
-            alreadyInTrip: true,
-            message: "User is already part of this trip",
+            error: "User is already part of this trip",
           });
+          continue;
         } else {
           // Add user to trip
           trip.users.push(userRef);
@@ -1888,6 +1887,45 @@ export const inviteUsersToTrip = async (
     const successCount = results.filter((r) => r.success).length;
     const errorCount = errors.length;
 
+    // Check if any users are already in the trip
+    const alreadyInTripErrors = errors.filter(
+      (error) => error.error === "User is already part of this trip"
+    );
+
+    // If all users are already in the trip, return conflict status
+    if (alreadyInTripErrors.length === users.length) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.CONFLICT,
+        "All users are already part of this trip"
+      );
+      return;
+    }
+
+    // If some users are already in the trip, return partial success with warning
+    if (alreadyInTripErrors.length > 0) {
+      sendSuccessResponse(
+        res,
+        STATUS_CODES.OK,
+        "Bulk invite completed with some conflicts",
+        {
+          tripId,
+          results,
+          errors,
+          summary: {
+            total: users.length,
+            successful: successCount,
+            failed: errorCount,
+            existing: existingUsers.length,
+            new: newUsers.length,
+            addedToTrip: addedToTripCount,
+          },
+        }
+      );
+      return;
+    }
+
+    // All users were successfully added
     sendSuccessResponse(res, STATUS_CODES.OK, "Bulk invite completed", {
       tripId,
       results,
@@ -1899,7 +1937,6 @@ export const inviteUsersToTrip = async (
         existing: existingUsers.length,
         new: newUsers.length,
         addedToTrip: addedToTripCount,
-        alreadyInTrip: results.filter((r) => r.alreadyInTrip).length,
       },
     });
   } catch (error) {
