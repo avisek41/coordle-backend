@@ -122,4 +122,8 @@ export const MESSAGES = {
   TRIP_DOCUMENT_UPLOAD_FAILED: "Failed to upload trip document",
   TRIP_DOCUMENT_ACCESS_DENIED: "Access denied to trip document",
   TRIP_NOT_FOUND_FOR_DOCUMENT: "Trip not found for document operation",
+
+  // Plan messages
+  USER_PLAN_RETRIEVED: "User plan information retrieved successfully",
+  NO_ACTIVE_PLAN: "No active plan found for user",
 } as const;

@@ -661,6 +661,7 @@
             }
           }
         },
+
         {
           "name": "Update User",
           "request": {
@@ -737,6 +738,23 @@
               "raw": "{{baseUrl}}/api/users/me",
               "host": ["{{baseUrl}}"],
               "path": ["api", "users", "me"]
+            }
+          }
+        },
+        {
+          "name": "Get Current User Plan",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/plan",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "plan"]
             }
           }
         },

@@ -8,6 +8,8 @@ import {
   PhoneVerification,
   PasswordReset,
   Trip,
+  Payment,
+  Plan,
 } from "../models";
 import { sendVerificationCode as sendTwilioSMS } from "../config/twilio";
 import { generateAccessToken } from "../config/jwt";
@@ -740,6 +742,76 @@ export const getCurrentUserProfile = async (
     return;
   } catch (error) {
     console.error("Get current user profile error:", error);
+    sendErrorResponse(
+      res,
+      STATUS_CODES.INTERNAL_SERVER_ERROR,
+      MESSAGES.INTERNAL_SERVER_ERROR
+    );
+    return;
+  }
+};
+
+// Get current user plan information only
+export const getCurrentUserPlan = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    if (!req.user) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.UNAUTHORIZED,
+        "Authentication required"
+      );
+      return;
+    }
+
+    // Find the most recent successful payment for the user
+    const latestPayment = await Payment.findOne({
+      userId: req.user.userId,
+      status: "succeeded",
+    })
+      .sort({ createdAt: -1 })
+      .populate({
+        path: "planId",
+        select:
+          "planName planVariant price currency features allowedHost trialDays",
+      });
+
+    let planInfo = null;
+    if (
+      latestPayment &&
+      latestPayment.planId &&
+      typeof latestPayment.planId === "object" &&
+      "planName" in latestPayment.planId
+    ) {
+      const plan = latestPayment.planId as any;
+      planInfo = {
+        planName: plan.planName,
+        planVariant: plan.planVariant,
+        price: plan.price,
+        currency: plan.currency,
+        features: plan.features,
+        allowedHost: plan.allowedHost,
+        trialDays: plan.trialDays,
+        paymentDate: latestPayment.createdAt,
+        paymentStatus: latestPayment.status,
+      };
+    }
+
+    if (!planInfo) {
+      sendSuccessResponse(res, STATUS_CODES.OK, MESSAGES.NO_ACTIVE_PLAN, {
+        currentPlan: null,
+      });
+      return;
+    }
+
+    sendSuccessResponse(res, STATUS_CODES.OK, MESSAGES.USER_PLAN_RETRIEVED, {
+      currentPlan: planInfo,
+    });
+    return;
+  } catch (error) {
+    console.error("Get current user plan error:", error);
     sendErrorResponse(
       res,
       STATUS_CODES.INTERNAL_SERVER_ERROR,

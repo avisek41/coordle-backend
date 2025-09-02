@@ -10,6 +10,7 @@ import {
   getUsersByRole,
   getUserProfile,
   getCurrentUserProfile,
+  getCurrentUserPlan,
   requestPasswordReset,
   resetPassword,
   setupProfile,
@@ -40,6 +41,7 @@ router.post("/create-password", createPassword);
 // User profile routes
 router.get("/profile", getUserProfile);
 router.get("/me", authenticateToken, getCurrentUserProfile);
+router.get("/plan", authenticateToken, getCurrentUserPlan);
 router.put("/setup-profile", authenticateToken, setupProfile);
 
 // User management routes
