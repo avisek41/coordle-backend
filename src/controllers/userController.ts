@@ -2249,6 +2249,26 @@ export const getUsersWithSamePlan = async (
       _id: { $ne: ownerId }, // Exclude the owner from results using $ne (not equal)
     }).select("_id name email phoneNumber userRole createdAt"); // Only return essential user fields for privacy
 
+    // Get all trips owned by the current owner
+    const ownerTrips = await Trip.find({ owner_id: ownerId });
+
+    // Extract user IDs from all owner's trips
+    const usersInOwnerTrips = new Set();
+    ownerTrips.forEach((trip) => {
+      trip.users.forEach((userRef) => {
+        // Extract user ID from reference format "/users/{userId}"
+        const userId = userRef.split("/").pop();
+        if (userId && userId !== ownerId) {
+          usersInOwnerTrips.add(userId);
+        }
+      });
+    });
+
+    // Filter out users who are already in owner's trips
+    const availableUsers = usersWithSamePlan.filter(
+      (user) => !usersInOwnerTrips.has((user._id as any).toString())
+    );
+
     // Get plan details
     const plan = await Plan.findById(owner.planId);
     const planDetails = plan
@@ -2275,9 +2295,11 @@ export const getUsersWithSamePlan = async (
           userRole: owner.userRole,
         },
         plan: planDetails,
-        users: usersWithSamePlan,
+        users: availableUsers,
         summary: {
-          totalUsers: usersWithSamePlan.length,
+          totalUsers: availableUsers.length,
+          totalUsersWithSamePlan: usersWithSamePlan.length,
+          usersAlreadyInTrips: usersInOwnerTrips.size,
           planId: owner.planId,
         },
       }

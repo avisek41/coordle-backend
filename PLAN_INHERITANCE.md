@@ -62,7 +62,7 @@ The Plan Inheritance feature allows trip owners to automatically share their sub
     },
     "plan": {
       "planId": "64f1a2b3c4d5e6f7g8h9i0j2",
-      "planName": "Organizations Plan",
+      "planName": "Organizations",
       "planVariant": "PRO",
       "price": 1200,
       "currency": "usd",
@@ -91,10 +91,12 @@ The Plan Inheritance feature allows trip owners to automatically share their sub
         "createdAt": "2024-01-16T14:20:00.000Z"
       }
     ],
-    "summary": {
-      "totalUsers": 2,
-      "planId": "64f1a2b3c4d5e6f7g8h9i0j2"
-    }
+            "summary": {
+          "totalUsers": 2,
+          "totalUsersWithSamePlan": 3,
+          "usersAlreadyInTrips": 1,
+          "planId": "64f1a2b3c4d5e6f7g8h9i0j2"
+        }
   }
 }
 ```
@@ -188,6 +190,8 @@ userSchema.index({ planId: 1 });
 3. **Exclusive Results**: Owner is excluded from the results (only other users shown)
 4. **Limited User Data**: Only essential user information is returned for privacy
 5. **Plan Details**: Full plan information is included for context
+6. **Trip Exclusion**: Users already in owner's trips are automatically excluded from results
+7. **Real-time Updates**: List automatically updates when users are invited to trips
 
 ## Error Handling
 
@@ -264,11 +268,18 @@ userSchema.index({ planId: 1 });
    - Should return error: "Invalid owner ID format"
    - Status code should be 400
 
+8. **Get Users with Same Plan - Trip Exclusion**
+   - Users already in owner's trips should be excluded from results
+   - Summary should show correct counts for available vs. excluded users
+   - API should return only users available for new invitations
+
 ## Usage Examples
 
 ### Finding Users with Same Plan
 
 To find all users who have the same plan as a specific owner:
+
+**Important**: This API automatically excludes users who are already in trips with the owner, ensuring you only see available users for new invitations.
 
 ```bash
 GET /api/users/same-plan/{ownerId}
@@ -287,6 +298,12 @@ GET /api/users/same-plan/64f1a2b3c4d5e6f7g8h9i0j1
 - **Admin Analytics**: Monitor plan distribution across users
 - **Support**: Identify users affected by plan changes
 - **Marketing**: Target users with specific plan features
+
+**Summary Fields:**
+- **totalUsers**: Number of available users (excluding those already in trips)
+- **totalUsersWithSamePlan**: Total users with the same plan (including those in trips)
+- **usersAlreadyInTrips**: Number of users already in owner's trips
+- **planId**: The plan ID being searched
 
 ## Future Enhancements
 

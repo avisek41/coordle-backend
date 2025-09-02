@@ -40,7 +40,7 @@ const Plan = mongoose.model("Plan", planSchema);
 // Your plan data
 const plans = [
   {
-    planName: "One Time Event Plan",
+    planName: "One Time Event",
     price: 250,
     currency: "usd",
     features: ["1 Trip", "3 Hosts per trip"],
@@ -52,7 +52,7 @@ const plans = [
     trialDays: 7,
   },
   {
-    planName: "One Time Event Plan",
+    planName: "One Time Event",
     price: 175,
     currency: "usd",
     features: ["1 Trip", "3 Hosts per trip"],
@@ -64,7 +64,7 @@ const plans = [
     trialDays: 7,
   },
   {
-    planName: "Organizations Plan",
+    planName: "Organizations",
     planVariant: "PRO",
     price: 1200,
     currency: "usd",
@@ -81,7 +81,7 @@ const plans = [
     trialDays: 15,
   },
   {
-    planName: "Organizations Plan",
+    planName: "Organizations",
     planVariant: "STANDARD",
     price: 840,
     currency: "usd",
