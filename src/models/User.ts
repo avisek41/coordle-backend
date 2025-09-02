@@ -18,6 +18,7 @@ export interface IUser extends Document {
   isEmailVerified: boolean;
   isProfileSetup: boolean;
   userRole: UserRole;
+  planId?: mongoose.Types.ObjectId; // Reference to the user's plan
 
   // Profile fields (all optional)
   firstName?: string;
@@ -107,6 +108,11 @@ const userSchema = new Schema<IUser>(
       },
       required: [true, "User role is required"],
       default: UserRole.TRAVELLER,
+    },
+    planId: {
+      type: Schema.Types.ObjectId,
+      ref: "Plan",
+      required: false,
     },
 
     // Profile fields (all optional)
@@ -285,6 +291,7 @@ userSchema.methods.comparePassword = async function (
 userSchema.index({ email: 1 });
 userSchema.index({ phoneNumber: 1 });
 userSchema.index({ userRole: 1 });
+userSchema.index({ planId: 1 });
 
 // Create and export the User model
 const User = mongoose.model<IUser>("User", userSchema);

@@ -350,7 +350,7 @@
               "path": ["api", "users", "invite-to-trip"]
             }
           },
-          "description": "Invite users to trip using email addresses only."
+          "description": "Invite users to trip using email addresses only. When the trip owner has a plan, invited users will automatically inherit the same plan."
         },
         {
           "name": "Invite Users to Trip (Phone Only)",
@@ -376,7 +376,7 @@
               "path": ["api", "users", "invite-to-trip"]
             }
           },
-          "description": "Invite users to trip using phone numbers with country code included."
+          "description": "Invite users to trip using phone numbers with country code included. When the trip owner has a plan, invited users will automatically inherit the same plan."
         },
         {
           "name": "Invite Users to Trip (Mixed Email & Phone)",
@@ -402,7 +402,25 @@
               "path": ["api", "users", "invite-to-trip"]
             }
           },
-          "description": "Invite users to trip using both email and phone numbers in the same request."
+          "description": "Invite users to trip using both email and phone numbers in the same request. When the trip owner has a plan, invited users will automatically inherit the same plan."
+        },
+        {
+          "name": "Get Users with Same Plan",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/same-plan/64f1a2b3c4d5e6f7g8h9i0j1",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "users", "same-plan", "64f1a2b3c4d5e6f7g8h9i0j1"]
+            }
+          },
+          "description": "Get all users who have the same plan as a specific owner. Returns users with matching planId, excluding the owner themselves."
         }
       ]
     },
@@ -2550,7 +2568,7 @@
                 }
               ]
             },
-            "description": "Add a user to a trip (trip owner/host only)"
+            "description": "Add a user to a trip (trip owner/host only). When the trip owner has a plan, the user will automatically inherit the same plan if they don't have one."
           }
         },
         {
@@ -2582,7 +2600,7 @@
                 }
               ]
             },
-            "description": "Add multiple users to a trip at once (trip owner/host only)"
+            "description": "Add multiple users to a trip at once (trip owner/host only). When the trip owner has a plan, users will automatically inherit the same plan if they don't have one."
           }
         },
         {

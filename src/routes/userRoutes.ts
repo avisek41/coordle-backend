@@ -21,6 +21,7 @@ import {
   checkUsersByEmails,
   registerMultipleUsers,
   inviteUsersToTrip,
+  getUsersWithSamePlan,
 } from "../controllers/userController";
 import { authenticateToken } from "../middleware/auth";
 
@@ -58,6 +59,7 @@ router.post("/check-email", checkUserByEmail);
 router.post("/check-emails", checkUsersByEmails);
 router.post("/register-multiple", registerMultipleUsers);
 router.post("/invite-to-trip", authenticateToken, inviteUsersToTrip);
+router.get("/same-plan/:ownerId", authenticateToken, getUsersWithSamePlan);
 router.post("/check-phone", checkUserByPhone);
 router.post("/check-email-verification", checkEmailVerificationStatus);
 

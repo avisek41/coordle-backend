@@ -850,11 +850,32 @@ export const addUserToTrip = async (
       return;
     }
 
+    // Get current user's plan for inheritance (only if owner)
+    let currentUserPlanId = null;
+    if (isOwner) {
+      const currentUserData = await User.findById(currentUser.userId);
+      if (currentUserData && currentUserData.planId) {
+        currentUserPlanId = currentUserData.planId;
+      }
+    }
+
     // Check if user exists
     const user = await User.findById(userId);
     if (!user) {
       sendErrorResponse(res, STATUS_CODES.NOT_FOUND, "User not found");
       return;
+    }
+
+    // Inherit plan from owner if user doesn't have one
+    let planInherited = false;
+    if (currentUserPlanId && !user.planId) {
+      try {
+        user.planId = currentUserPlanId;
+        await user.save();
+        planInherited = true;
+      } catch (error) {
+        console.error(`Error updating plan for user ${userId}:`, error);
+      }
     }
 
     const userRef = `/users/${userId}`;
@@ -893,6 +914,10 @@ export const addUserToTrip = async (
         userId,
         userRole,
         userRef,
+        planInheritance: {
+          planInherited,
+          ...(currentUserPlanId && { ownerPlanId: currentUserPlanId }),
+        },
       }
     );
   } catch (error) {
@@ -968,6 +993,15 @@ export const addMultipleUsersToTrip = async (
     const errors = [];
     let addedCount = 0;
 
+    // Get current user's plan for inheritance (only if owner)
+    let currentUserPlanId = null;
+    if (isOwner) {
+      const currentUserData = await User.findById(currentUser.userId);
+      if (currentUserData && currentUserData.planId) {
+        currentUserPlanId = currentUserData.planId;
+      }
+    }
+
     // Process each user
     for (const userData of users) {
       try {
@@ -989,6 +1023,18 @@ export const addMultipleUsersToTrip = async (
             error: "User not found",
           });
           continue;
+        }
+
+        // Inherit plan from owner if user doesn't have one
+        let planInherited = false;
+        if (currentUserPlanId && !user.planId) {
+          try {
+            user.planId = currentUserPlanId;
+            await user.save();
+            planInherited = true;
+          } catch (error) {
+            console.error(`Error updating plan for user ${userId}:`, error);
+          }
         }
 
         const userRef = `/users/${userId}`;
@@ -1020,6 +1066,10 @@ export const addMultipleUsersToTrip = async (
           alreadyInTrip: false,
           userRole,
           message: "User added to trip successfully",
+          planInheritance: {
+            planInherited,
+            ...(currentUserPlanId && { ownerPlanId: currentUserPlanId }),
+          },
         });
 
         addedCount++;
@@ -1051,6 +1101,10 @@ export const addMultipleUsersToTrip = async (
           added: addedCount,
           alreadyInTrip: results.filter((r) => r.alreadyInTrip).length,
           failed: errors.length,
+          planInheritance: {
+            ownerHasPlan: !!currentUserPlanId,
+            plansInherited: results.filter((r) => r.planInheritance?.planInherited).length,
+          },
         },
       }
     );

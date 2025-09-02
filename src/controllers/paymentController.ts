@@ -141,10 +141,11 @@ export const confirmPayment = async (req: Request, res: Response) => {
       payment.status = "succeeded";
       await payment.save();
 
-      // Update user role from traveller to owner
+      // Update user role from traveller to owner and set planId
       const user = await User.findById(userId);
       if (user && user.userRole === UserRole.TRAVELLER) {
         user.userRole = UserRole.OWNER;
+        user.planId = payment.planId;
         await user.save();
       }
 

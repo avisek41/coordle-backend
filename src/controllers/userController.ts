@@ -1691,6 +1691,16 @@ export const inviteUsersToTrip = async (
       return;
     }
 
+    // Get current user's plan for inheritance
+    let currentUserPlanId = null;
+    if (isOwner) {
+      // If current user is owner, get their plan
+      const currentUserData = await User.findById(currentUser.userId);
+      if (currentUserData && currentUserData.planId) {
+        currentUserPlanId = currentUserData.planId;
+      }
+    }
+
     const results = [];
     const errors = [];
     const existingUsers = [];
@@ -1732,7 +1742,7 @@ export const inviteUsersToTrip = async (
     // Step 3: Check which users already exist (by email or phone)
     const existingUsersFromDB = await User.find({
       $or: [{ email: { $in: emails } }, { phoneNumber: { $in: phoneNumbers } }],
-    }).select("_id email phoneNumber name userRole");
+    }).select("_id email phoneNumber name userRole planId");
 
     // Create maps of existing users
     const existingUsersByEmail = new Map();
@@ -1747,6 +1757,7 @@ export const inviteUsersToTrip = async (
           phoneNumber: user.phoneNumber,
           name: user.name,
           userRole: user.userRole,
+          planId: user.planId,
         });
       }
       if (user.phoneNumber) {
@@ -1757,6 +1768,7 @@ export const inviteUsersToTrip = async (
           phoneNumber: user.phoneNumber,
           name: user.name,
           userRole: user.userRole,
+          planId: user.planId,
         });
       }
     });
@@ -1813,6 +1825,27 @@ export const inviteUsersToTrip = async (
         }
 
         if (existingUser) {
+          // Store original planId for comparison
+          const originalPlanId = existingUser.planId;
+
+          // Update existing user's plan if owner has a plan and user doesn't
+          if (currentUserPlanId && !existingUser.planId) {
+            try {
+              await User.findByIdAndUpdate(existingUser.userId, {
+                planId: currentUserPlanId,
+              });
+              existingUser.planId = currentUserPlanId;
+            } catch (error) {
+              console.error(
+                `Error updating plan for existing user ${existingUser.userId}:`,
+                error
+              );
+            }
+          }
+
+          // Add original planId to track changes
+          existingUser.originalPlanId = originalPlanId;
+
           existingUsers.push(existingUser);
           userId = existingUser.userId;
           results.push({
@@ -1822,6 +1855,8 @@ export const inviteUsersToTrip = async (
             exists: true,
             userId: existingUser.userId,
             message: "User already exists",
+            ...(currentUserPlanId &&
+              !existingUser.planId && { planUpdated: true }),
           });
         } else {
           // Validate password if provided
@@ -1857,6 +1892,8 @@ export const inviteUsersToTrip = async (
             userRole,
             isPhoneVerified: false,
             isEmailVerified: false,
+            // Inherit plan from owner if available
+            ...(currentUserPlanId && { planId: currentUserPlanId }),
           };
 
           if (email) {
@@ -1902,6 +1939,7 @@ export const inviteUsersToTrip = async (
             phoneNumber: savedUser.phoneNumber,
             name: savedUser.name,
             userRole: savedUser.userRole,
+            planId: savedUser.planId,
           });
 
           userId = savedUser._id;
@@ -1914,6 +1952,10 @@ export const inviteUsersToTrip = async (
             exists: false,
             userId: savedUser._id,
             message: "User registered successfully",
+            ...(currentUserPlanId && {
+              planInherited: true,
+              planId: currentUserPlanId,
+            }),
           });
         }
 
@@ -1991,6 +2033,13 @@ export const inviteUsersToTrip = async (
             existing: existingUsers.length,
             new: newUsers.length,
             addedToTrip: addedToTripCount,
+            planInheritance: {
+              ownerHasPlan: !!currentUserPlanId,
+              planInherited: newUsers.filter((u) => u.planId).length,
+              plansUpdated: existingUsers.filter(
+                (u) => u.planId && !u.originalPlanId
+              ).length,
+            },
           },
         }
       );
@@ -2009,6 +2058,13 @@ export const inviteUsersToTrip = async (
         existing: existingUsers.length,
         new: newUsers.length,
         addedToTrip: addedToTripCount,
+        planInheritance: {
+          ownerHasPlan: !!currentUserPlanId,
+          planInherited: newUsers.filter((u) => u.planId).length,
+          plansUpdated: existingUsers.filter(
+            (u) => u.planId && !u.originalPlanId
+          ).length,
+        },
       },
     });
   } catch (error) {
@@ -2112,6 +2168,122 @@ export const createPassword = async (
     });
   } catch (error) {
     console.error("Create password error:", error);
+    sendErrorResponse(
+      res,
+      STATUS_CODES.INTERNAL_SERVER_ERROR,
+      MESSAGES.INTERNAL_SERVER_ERROR
+    );
+  }
+};
+
+/**
+ * Get all users who have the same plan as a specific owner
+ * This endpoint allows finding users with matching planId for collaboration and analytics
+ *
+ * @param req - Express request object with ownerId in params
+ * @param res - Express response object
+ * @returns Promise<void>
+ *
+ * @example
+ * GET /api/users/same-plan/64f1a2b3c4d5e6f7g8h9i0j1
+ *
+ * Use cases:
+ * - Trip owners finding collaborators with same plan
+ * - Admin analytics for plan distribution
+ * - Support team identifying affected users
+ * - Marketing targeting specific plan users
+ */
+export const getUsersWithSamePlan = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    // Extract owner ID from request parameters
+    const { ownerId } = req.params;
+    // Get current authenticated user from JWT token
+    const currentUser = (req as any).user;
+
+    if (!currentUser) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.UNAUTHORIZED,
+        "User authentication required"
+      );
+      return;
+    }
+
+    if (!ownerId) {
+      sendErrorResponse(res, STATUS_CODES.BAD_REQUEST, "Owner ID is required");
+      return;
+    }
+
+    // Validate ownerId format
+    if (!mongoose.Types.ObjectId.isValid(ownerId)) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        "Invalid owner ID format"
+      );
+      return;
+    }
+
+    // Get the owner's plan
+    const owner = await User.findById(ownerId);
+    if (!owner) {
+      sendErrorResponse(res, STATUS_CODES.NOT_FOUND, "Owner not found");
+      return;
+    }
+
+    if (!owner.planId) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        "Owner does not have a plan"
+      );
+      return;
+    }
+
+    // Find all users with the same plan (excluding the owner themselves)
+    const usersWithSamePlan = await User.find({
+      planId: owner.planId, // Match users with identical planId
+      _id: { $ne: ownerId }, // Exclude the owner from results using $ne (not equal)
+    }).select("_id name email phoneNumber userRole createdAt"); // Only return essential user fields for privacy
+
+    // Get plan details
+    const plan = await Plan.findById(owner.planId);
+    const planDetails = plan
+      ? {
+          planId: plan._id,
+          planName: plan.planName,
+          planVariant: plan.planVariant,
+          price: plan.price,
+          currency: plan.currency,
+          features: plan.features,
+        }
+      : null;
+
+    sendSuccessResponse(
+      res,
+      STATUS_CODES.OK,
+      "Users with same plan retrieved successfully",
+      {
+        owner: {
+          id: owner._id,
+          name: owner.name,
+          email: owner.email,
+          phoneNumber: owner.phoneNumber,
+          userRole: owner.userRole,
+        },
+        plan: planDetails,
+        users: usersWithSamePlan,
+        summary: {
+          totalUsers: usersWithSamePlan.length,
+          planId: owner.planId,
+        },
+      }
+    );
+  } catch (error) {
+    console.error("Error getting users with same plan:", error);
     sendErrorResponse(
       res,
       STATUS_CODES.INTERNAL_SERVER_ERROR,

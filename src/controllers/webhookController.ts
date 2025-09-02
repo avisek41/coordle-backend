@@ -77,10 +77,11 @@ const handleCheckoutSessionCompleted = async (session: any) => {
       payment.status = "succeeded";
       await payment.save();
 
-      // Upgrade role
+      // Upgrade role and set planId
       const user = await User.findById(payment.userId);
       if (user?.userRole === UserRole.TRAVELLER) {
         user.userRole = UserRole.OWNER;
+        user.planId = payment.planId;
         await user.save();
       }
     }
@@ -102,10 +103,14 @@ const handlePaymentSuccess = async (paymentIntent: any) => {
       payment.status = "succeeded";
       await payment.save();
 
-      // Update user role from traveller to owner
+      // Update user role from traveller to owner and set planId
       const user = await User.findById(userId);
       if (user && user.userRole === UserRole.TRAVELLER) {
         user.userRole = UserRole.OWNER;
+        // Get planId from payment record
+        if (payment.planId) {
+          user.planId = payment.planId;
+        }
         await user.save();
       }
     }
