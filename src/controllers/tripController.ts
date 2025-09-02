@@ -1154,9 +1154,56 @@ export const removeUserFromTrip = async (
       return;
     }
 
+    // Log current trip state for debugging
+    console.log(`Trip ${tripId} current users:`, trip.users);
+    console.log(`Trip ${tripId} current hosts:`, trip.hosts);
+    console.log(`Attempting to remove userRef: ${userRef}`);
+    console.log(`User exists in users array: ${trip.users.includes(userRef)}`);
+    console.log(`User exists in hosts array: ${trip.hosts.includes(userRef)}`);
+
     // Remove user from trip (remove from both users and hosts arrays)
-    trip.users = trip.users.filter((user) => user !== userRef);
-    trip.hosts = trip.hosts.filter((host) => host !== userRef);
+    const initialUsersCount = trip.users.length;
+    const initialHostsCount = trip.hosts.length;
+
+    // More robust removal - handle potential format issues
+    const userRefVariations = [
+      userRef,
+      userRef.replace("/users/", ""),
+      `/users/${userRef.replace("/users/", "")}`,
+      userRef.replace("/users/", "/users/"),
+    ];
+
+    // Remove from users array
+    trip.users = trip.users.filter((user) => {
+      const shouldKeep = !userRefVariations.includes(user);
+      if (!shouldKeep) {
+        console.log(`Removing user from users array: ${user}`);
+      }
+      return shouldKeep;
+    });
+
+    // Remove from hosts array
+    trip.hosts = trip.hosts.filter((host) => {
+      const shouldKeep = !userRefVariations.includes(host);
+      if (!shouldKeep) {
+        console.log(`Removing user from hosts array: ${host}`);
+      }
+      return shouldKeep;
+    });
+
+    const finalUsersCount = trip.users.length;
+    const finalHostsCount = trip.hosts.length;
+
+    // Log the removal for debugging
+    console.log(`Removing user ${userRef} from trip ${tripId}`);
+    console.log(
+      `Users before: ${initialUsersCount}, after: ${finalUsersCount}`
+    );
+    console.log(
+      `Hosts before: ${initialHostsCount}, after: ${finalHostsCount}`
+    );
+    console.log(`Final users array:`, trip.users);
+    console.log(`Final hosts array:`, trip.hosts);
 
     // Update invite count (decrease if user was added via invite)
     if (trip.invite_count > 0) {
@@ -1173,6 +1220,11 @@ export const removeUserFromTrip = async (
         tripId,
         userId,
         userRef,
+        removalDetails: {
+          usersRemoved: initialUsersCount - finalUsersCount,
+          hostsRemoved: initialHostsCount - finalHostsCount,
+          inviteCountDecreased: initialUsersCount - finalUsersCount > 0 ? 1 : 0,
+        },
       }
     );
   } catch (error) {
