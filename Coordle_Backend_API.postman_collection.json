@@ -421,6 +421,80 @@
             }
           },
           "description": "Get all users who have the same plan as a specific owner. Returns users with matching planId, excluding the owner themselves."
+        },
+        {
+          "name": "Get Trip Invites",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/trip/64f1a2b3c4d5e6f7g8h9i0j1/invites",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "users",
+                "trip",
+                "64f1a2b3c4d5e6f7g8h9i0j1",
+                "invites"
+              ]
+            }
+          },
+          "description": "Get all invites for a specific trip, grouped by invite type (email/phone). Returns both email and phone invites with their status and details."
+        },
+        {
+          "name": "Get Trip Invites by Type (Email)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/trip/64f1a2b3c4d5e6f7g8h9i0j1/invites/email",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "users",
+                "trip",
+                "64f1a2b3c4d5e6f7g8h9i0j1",
+                "invites",
+                "email"
+              ]
+            }
+          },
+          "description": "Get all email invites for a specific trip. Returns only email-based invites with their status and details."
+        },
+        {
+          "name": "Get Trip Invites by Type (Phone)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/trip/64f1a2b3c4d5e6f7g8h9i0j1/invites/phone",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "users",
+                "trip",
+                "64f1a2b3c4d5e6f7g8h9i0j1",
+                "invites",
+                "phone"
+              ]
+            }
+          },
+          "description": "Get all phone invites for a specific trip. Returns only phone-based invites with their status and details."
         }
       ]
     },

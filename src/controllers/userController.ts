@@ -10,6 +10,8 @@ import {
   Trip,
   Payment,
   Plan,
+  Invite,
+  InviteType,
 } from "../models";
 import { sendVerificationCode as sendTwilioSMS } from "../config/twilio";
 import { generateAccessToken } from "../config/jwt";
@@ -1980,6 +1982,24 @@ export const inviteUsersToTrip = async (
           }
 
           addedToTripCount++;
+
+          // Create invite record
+          try {
+            const inviteData = {
+              tripId: trip._id,
+              invitedBy: currentUser.userId,
+              inviteType: email ? InviteType.EMAIL : InviteType.PHONE,
+              contactInfo: email || phoneNumber,
+              status: "accepted" as const,
+              userId: userId,
+            };
+
+            const newInvite = new Invite(inviteData);
+            await newInvite.save();
+          } catch (inviteError) {
+            console.error("Error creating invite record:", inviteError);
+            // Don't fail the main operation if invite record creation fails
+          }
         }
       } catch (error) {
         console.error(
@@ -2177,8 +2197,15 @@ export const createPassword = async (
 };
 
 /**
- * Get all users who have the same plan as a specific owner
+ * Get all users who have the same plan as a specific owner OR are in owner's trips
  * This endpoint allows finding users with matching planId for collaboration and analytics
+ *
+ * NEW: Now also includes users who are in the owner's trips (even if they don't have the same plan yet)
+ * This is useful because invited users inherit the owner's plan when they join trips
+ *
+ * INVITE TRACKING: Automatically detects invite type (email/phone) even for users invited before tracking system
+ * - Users with actual invite records: Shows real invite data
+ * - Users without invite records: Infers invite type from their contact method (email = email invite, phone = phone invite)
  *
  * @param req - Express request object with ownerId in params
  * @param res - Express response object
@@ -2189,6 +2216,8 @@ export const createPassword = async (
  *
  * Use cases:
  * - Trip owners finding collaborators with same plan
+ * - Finding users in owner's trips (who should have inherited the plan)
+ * - Tracking invite methods (email vs phone) for all users
  * - Admin analytics for plan distribution
  * - Support team identifying affected users
  * - Marketing targeting specific plan users
@@ -2243,12 +2272,6 @@ export const getUsersWithSamePlan = async (
       return;
     }
 
-    // Find all users with the same plan (excluding the owner themselves)
-    const usersWithSamePlan = await User.find({
-      planId: owner.planId, // Match users with identical planId
-      _id: { $ne: ownerId }, // Exclude the owner from results using $ne (not equal)
-    }).select("_id name email phoneNumber userRole createdAt"); // Only return essential user fields for privacy
-
     // Get all trips owned by the current owner
     const ownerTrips = await Trip.find({ owner_id: ownerId });
 
@@ -2264,10 +2287,98 @@ export const getUsersWithSamePlan = async (
       });
     });
 
-    // Filter out users who are already in owner's trips
-    const availableUsers = usersWithSamePlan.filter(
-      (user) => !usersInOwnerTrips.has((user._id as any).toString())
+    // Find all users with the same plan OR users who are in owner's trips
+    const usersWithSamePlan = await User.find({
+      $or: [
+        { planId: owner.planId }, // Users with identical planId
+        { _id: { $in: Array.from(usersInOwnerTrips) } }, // Users in owner's trips
+      ],
+      _id: { $ne: ownerId }, // Exclude the owner from results
+    }).select("_id name email phoneNumber userRole planId createdAt"); // Include planId for debugging
+
+    // Get invite information for these users to show invite type
+    const userIds = usersWithSamePlan.map((user) => user._id);
+
+    const invites = await Invite.find({
+      userId: { $in: userIds },
+      tripId: { $in: ownerTrips.map((trip) => trip._id) },
+    }).select("userId tripId inviteType contactInfo status");
+
+    // Create a map of userId to invite info
+    const userInviteMap = new Map();
+    invites.forEach((invite: any) => {
+      if (invite.userId && !userInviteMap.has(invite.userId.toString())) {
+        userInviteMap.set(invite.userId.toString(), []);
+      }
+      if (invite.userId) {
+        userInviteMap.get(invite.userId.toString()).push({
+          tripId: invite.tripId,
+          inviteType: invite.inviteType,
+          contactInfo: invite.contactInfo,
+          status: invite.status,
+        });
+      }
+    });
+
+    // Remove duplicates (users might appear in both categories)
+    const uniqueUsers = usersWithSamePlan.filter(
+      (user: any, index, self) =>
+        index ===
+        self.findIndex((u: any) => u._id.toString() === user._id.toString())
     );
+
+    // Separate users by category for better understanding
+    const usersByCategory = {
+      samePlan: uniqueUsers.filter(
+        (user: any) =>
+          user.planId &&
+          owner.planId &&
+          user.planId.toString() === owner.planId.toString()
+      ),
+      inTrips: uniqueUsers.filter((user: any) =>
+        usersInOwnerTrips.has(user._id.toString())
+      ),
+      both: uniqueUsers.filter(
+        (user: any) =>
+          user.planId &&
+          owner.planId &&
+          user.planId.toString() === owner.planId.toString() &&
+          usersInOwnerTrips.has(user._id.toString())
+      ),
+    };
+
+    // Add invite information to each user
+    const availableUsers = uniqueUsers.map((user: any) => {
+      const userInvites = userInviteMap.get(user._id.toString()) || [];
+
+      // If no invite records exist, create default invite info based on user's contact method
+      let inviteInfo = null;
+
+      if (userInvites.length > 0) {
+        // Use actual invite records if they exist
+        const inviteType = userInvites[0]?.inviteType || "unknown";
+        inviteInfo = {
+          inviteType: inviteType,
+        };
+      } else {
+        // Create default invite info for users without invite records
+        // This handles users invited before the tracking system was implemented
+        const defaultInviteType = user.email
+          ? InviteType.EMAIL
+          : InviteType.PHONE;
+
+        inviteInfo = {
+          inviteType: defaultInviteType,
+          isHistorical: true, // Flag to indicate this is inferred data
+        };
+      }
+
+      return {
+        ...(user.toObject ? user.toObject() : user),
+        inviteType: inviteInfo.inviteType,
+        ...(inviteInfo.isHistorical && { isHistorical: true }),
+      };
+    });
 
     // Get plan details
     const plan = await Plan.findById(owner.planId);
@@ -2296,16 +2407,245 @@ export const getUsersWithSamePlan = async (
         },
         plan: planDetails,
         users: availableUsers,
-        summary: {
-          totalUsers: availableUsers.length,
-          totalUsersWithSamePlan: usersWithSamePlan.length,
-          usersAlreadyInTrips: usersInOwnerTrips.size,
-          planId: owner.planId,
-        },
       }
     );
   } catch (error) {
     console.error("Error getting users with same plan:", error);
+    sendErrorResponse(
+      res,
+      STATUS_CODES.INTERNAL_SERVER_ERROR,
+      MESSAGES.INTERNAL_SERVER_ERROR
+    );
+  }
+};
+
+// Get invites by type (email or phone) for a specific trip
+export const getInvitesByType = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { tripId, inviteType } = req.params;
+    const currentUser = (req as any).user;
+
+    if (!currentUser) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.UNAUTHORIZED,
+        "User authentication required"
+      );
+      return;
+    }
+
+    if (!tripId || !inviteType) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        "Trip ID and invite type are required"
+      );
+      return;
+    }
+
+    // Validate inviteType
+    if (!Object.values(InviteType).includes(inviteType as InviteType)) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        "Invalid invite type. Must be 'email' or 'phone'"
+      );
+      return;
+    }
+
+    // Validate tripId format
+    if (!mongoose.Types.ObjectId.isValid(tripId)) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        "Invalid trip ID format"
+      );
+      return;
+    }
+
+    // Check if trip exists and user has access
+    const trip = await Trip.findById(tripId);
+    if (!trip) {
+      sendErrorResponse(res, STATUS_CODES.NOT_FOUND, MESSAGES.TRIP_NOT_FOUND);
+      return;
+    }
+
+    // Check if current user is trip owner, host, or member
+    const currentUserRef = `/users/${currentUser.userId}`;
+    const isOwner = trip.owner_id === currentUser.userId;
+    const isHost = trip.hosts.includes(currentUserRef);
+    const isMember = trip.users.includes(currentUserRef);
+
+    if (!isOwner && !isHost && !isMember) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.FORBIDDEN,
+        "You don't have access to this trip"
+      );
+      return;
+    }
+
+    // Get invites by type for this trip
+    const invites = await Invite.find({
+      tripId,
+      inviteType: inviteType as InviteType,
+    })
+      .populate("invitedBy", "name email phoneNumber")
+      .populate("userId", "name email phoneNumber userRole")
+      .sort({ createdAt: -1 });
+
+    sendSuccessResponse(
+      res,
+      STATUS_CODES.OK,
+      `${inviteType} invites retrieved successfully`,
+      {
+        tripId,
+        inviteType,
+        invites,
+        summary: {
+          total: invites.length,
+          pending: invites.filter((invite: any) => invite.status === "pending")
+            .length,
+          accepted: invites.filter(
+            (invite: any) => invite.status === "accepted"
+          ).length,
+          declined: invites.filter(
+            (invite: any) => invite.status === "declined"
+          ).length,
+          expired: invites.filter((invite: any) => invite.status === "expired")
+            .length,
+        },
+      }
+    );
+  } catch (error) {
+    console.error("Error getting invites by type:", error);
+    sendErrorResponse(
+      res,
+      STATUS_CODES.INTERNAL_SERVER_ERROR,
+      MESSAGES.INTERNAL_SERVER_ERROR
+    );
+  }
+};
+
+// Get all invites for a specific trip
+export const getTripInvites = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { tripId } = req.params;
+    const currentUser = (req as any).user;
+
+    if (!currentUser) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.UNAUTHORIZED,
+        "User authentication required"
+      );
+      return;
+    }
+
+    if (!tripId) {
+      sendErrorResponse(res, STATUS_CODES.BAD_REQUEST, "Trip ID is required");
+      return;
+    }
+
+    // Validate tripId format
+    if (!mongoose.Types.ObjectId.isValid(tripId)) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        "Invalid trip ID format"
+      );
+      return;
+    }
+
+    // Check if trip exists and user has access
+    const trip = await Trip.findById(tripId);
+    if (!trip) {
+      sendErrorResponse(res, STATUS_CODES.NOT_FOUND, MESSAGES.TRIP_NOT_FOUND);
+      return;
+    }
+
+    // Check if current user is trip owner, host, or member
+    const currentUserRef = `/users/${currentUser.userId}`;
+    const isOwner = trip.owner_id === currentUser.userId;
+    const isHost = trip.hosts.includes(currentUserRef);
+    const isMember = trip.users.includes(currentUserRef);
+
+    if (!isOwner && !isHost && !isMember) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.FORBIDDEN,
+        "You don't have access to this trip"
+      );
+      return;
+    }
+
+    // Get all invites for this trip
+    const invites = await Invite.find({ tripId })
+      .populate("invitedBy", "name email phoneNumber")
+      .populate("userId", "name email phoneNumber userRole")
+      .sort({ createdAt: -1 });
+
+    // Group invites by type
+    const emailInvites = invites.filter(
+      (invite: any) => invite.inviteType === InviteType.EMAIL
+    );
+    const phoneInvites = invites.filter(
+      (invite: any) => invite.inviteType === InviteType.PHONE
+    );
+
+    sendSuccessResponse(
+      res,
+      STATUS_CODES.OK,
+      "Trip invites retrieved successfully",
+      {
+        tripId,
+        invites: {
+          email: emailInvites,
+          phone: phoneInvites,
+        },
+        summary: {
+          total: invites.length,
+          email: {
+            total: emailInvites.length,
+            pending: emailInvites.filter(
+              (invite: any) => invite.status === "pending"
+            ).length,
+            accepted: emailInvites.filter(
+              (invite: any) => invite.status === "accepted"
+            ).length,
+            declined: emailInvites.filter(
+              (invite: any) => invite.status === "declined"
+            ).length,
+            expired: emailInvites.filter(
+              (invite: any) => invite.status === "expired"
+            ).length,
+          },
+          phone: {
+            total: phoneInvites.length,
+            pending: phoneInvites.filter(
+              (invite: any) => invite.status === "pending"
+            ).length,
+            accepted: phoneInvites.filter(
+              (invite: any) => invite.status === "accepted"
+            ).length,
+            declined: phoneInvites.filter(
+              (invite: any) => invite.status === "declined"
+            ).length,
+            expired: phoneInvites.filter(
+              (invite: any) => invite.status === "expired"
+            ).length,
+          },
+        },
+      }
+    );
+  } catch (error) {
+    console.error("Error getting trip invites:", error);
     sendErrorResponse(
       res,
       STATUS_CODES.INTERNAL_SERVER_ERROR,

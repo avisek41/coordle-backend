@@ -18,3 +18,4 @@ export { default as Plan, type IPlan } from "./Plan";
 export { default as Payment, type IPayment } from "./Payment";
 export { default as Trip, type ITrip } from "./Trip";
 export { default as TripDocument, type ITripDocument } from "./TripDocument";
+export { Invite, InviteType, type IInvite } from "./Invite";

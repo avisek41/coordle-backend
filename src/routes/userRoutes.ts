@@ -22,6 +22,8 @@ import {
   registerMultipleUsers,
   inviteUsersToTrip,
   getUsersWithSamePlan,
+  getInvitesByType,
+  getTripInvites,
 } from "../controllers/userController";
 import { authenticateToken } from "../middleware/auth";
 
@@ -62,5 +64,13 @@ router.post("/invite-to-trip", authenticateToken, inviteUsersToTrip);
 router.get("/same-plan/:ownerId", authenticateToken, getUsersWithSamePlan);
 router.post("/check-phone", checkUserByPhone);
 router.post("/check-email-verification", checkEmailVerificationStatus);
+
+// Invite management routes
+router.get("/trip/:tripId/invites", authenticateToken, getTripInvites);
+router.get(
+  "/trip/:tripId/invites/:inviteType",
+  authenticateToken,
+  getInvitesByType
+);
 
 export default router;
