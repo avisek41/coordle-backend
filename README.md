@@ -131,7 +131,7 @@ coordle-backend/
 
 - `GET /api/users/me` - Get current user profile (requires JWT token)
 - `GET /api/users/plan` - Get current user plan information only (requires JWT token)
-- `GET /api/users/profile` - Get user profile by userId
+- `GET /api/users/profile/:userId` - Get user profile by userId
 - `GET /api/users` - Get all users
 - `GET /api/users/:id` - Get user by ID
 - `PUT /api/users/:id` - Update user

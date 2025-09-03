@@ -42,7 +42,7 @@ router.post("/reset-password", resetPassword);
 router.post("/create-password", createPassword);
 
 // User profile routes
-router.get("/profile", getUserProfile);
+router.get("/profile/:userId", getUserProfile);
 router.get("/me", authenticateToken, getCurrentUserProfile);
 router.get("/plan", authenticateToken, getCurrentUserPlan);
 router.put("/setup-profile", authenticateToken, setupProfile);

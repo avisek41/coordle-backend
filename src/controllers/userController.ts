@@ -669,7 +669,7 @@ export const getUserProfile = async (
   res: Response
 ): Promise<void> => {
   try {
-    const { userId } = req.body;
+    const { userId } = req.params;
 
     if (!userId) {
       sendErrorResponse(
@@ -2291,10 +2291,10 @@ export const getUsersWithSamePlan = async (
     // Find users with same plan but NOT currently in owner's trips
     const usersWithSamePlan = await User.find({
       planId: owner.planId, // Users with identical planId
-      _id: { 
+      _id: {
         $ne: ownerId, // Exclude the owner from results
-        $nin: Array.from(usersInOwnerTrips) // Exclude users currently in trips
-      }
+        $nin: Array.from(usersInOwnerTrips), // Exclude users currently in trips
+      },
     }).select("_id name email phoneNumber userRole planId createdAt"); // Include planId for debugging
 
     // Get invite information for these users to show invite type

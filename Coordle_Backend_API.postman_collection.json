@@ -810,10 +810,17 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/users/profile",
+              "raw": "{{baseUrl}}/api/users/profile/:userId",
               "host": ["{{baseUrl}}"],
-              "path": ["api", "users", "profile"]
-            }
+              "path": ["api", "users", "profile", ":userId"],
+              "variable": [
+                {
+                  "key": "userId",
+                  "value": "68b004193b8d3d68f6145781"
+                }
+              ]
+            },
+            "description": "Get user profile by userId (no authentication required)"
           }
         },
         {
