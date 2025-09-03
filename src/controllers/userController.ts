@@ -2200,8 +2200,10 @@ export const createPassword = async (
  * Get all users who have the same plan as a specific owner OR are in owner's trips
  * This endpoint allows finding users with matching planId for collaboration and analytics
  *
- * NEW: Now also includes users who are in the owner's trips (even if they don't have the same plan yet)
- * This is useful because invited users inherit the owner's plan when they join trips
+ * MANDATORY: Shows users with same plan OR users in trips
+ * - Users with identical planId are always included
+ * - Users currently in owner's trips are included
+ * - Users removed from trips are automatically excluded (only active members)
  *
  * INVITE TRACKING: Automatically detects invite type (email/phone) even for users invited before tracking system
  * - Users with actual invite records: Shows real invite data
@@ -2275,7 +2277,7 @@ export const getUsersWithSamePlan = async (
     // Get all trips owned by the current owner
     const ownerTrips = await Trip.find({ owner_id: ownerId });
 
-    // Extract user IDs from all owner's trips
+    // Extract user IDs from all owner's trips (only active members)
     const usersInOwnerTrips = new Set();
     ownerTrips.forEach((trip) => {
       trip.users.forEach((userRef) => {
@@ -2287,11 +2289,11 @@ export const getUsersWithSamePlan = async (
       });
     });
 
-    // Find all users with the same plan OR users who are in owner's trips
+    // Find all users with the same plan OR users who are currently in owner's trips
     const usersWithSamePlan = await User.find({
       $or: [
         { planId: owner.planId }, // Users with identical planId
-        { _id: { $in: Array.from(usersInOwnerTrips) } }, // Users in owner's trips
+        { _id: { $in: Array.from(usersInOwnerTrips) } }, // Users currently in owner's trips
       ],
       _id: { $ne: ownerId }, // Exclude the owner from results
     }).select("_id name email phoneNumber userRole planId createdAt"); // Include planId for debugging
