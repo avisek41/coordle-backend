@@ -1103,7 +1103,9 @@ export const addMultipleUsersToTrip = async (
           failed: errors.length,
           planInheritance: {
             ownerHasPlan: !!currentUserPlanId,
-            plansInherited: results.filter((r) => r.planInheritance?.planInherited).length,
+            plansInherited: results.filter(
+              (r) => r.planInheritance?.planInherited
+            ).length,
           },
         },
       }
@@ -1528,7 +1530,7 @@ export const getTripMembers = async (
 
     // Get user details with only required fields for members page
     const users = await User.find({ _id: { $in: uniqueUserIds } }).select(
-      "_id email phoneNumber userRole"
+      "_id email phoneNumber userRole preferredName"
     );
 
     // Format response for members page
@@ -1537,6 +1539,7 @@ export const getTripMembers = async (
       email: user.email || null,
       phoneNumber: user.phoneNumber || null,
       userRole: user.userRole,
+      preferredName: user.preferredName || null,
     }));
 
     sendSuccessResponse(
