@@ -2784,7 +2784,7 @@
                 }
               ]
             },
-            "description": "Get all trip members with email/phone and userId for members page"
+            "description": "Get all trip members with conditional contact info (email only if invited by email, both email and phone if invited by phone) and userId for members page"
           }
         },
 

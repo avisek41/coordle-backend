@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import mongoose from "mongoose";
-import { Trip, TripDocument, ITrip, User } from "../models";
+import { Trip, TripDocument, ITrip, User, Invite } from "../models";
 import {
   sendSuccessResponse,
   sendErrorResponse,
@@ -1533,14 +1533,57 @@ export const getTripMembers = async (
       "_id email phoneNumber userRole preferredName"
     );
 
-    // Format response for members page
-    const members = users.map((user: any) => ({
-      userId: user._id.toString(),
-      email: user.email || null,
-      phoneNumber: user.phoneNumber || null,
-      userRole: user.userRole,
-      preferredName: user.preferredName || null,
-    }));
+    // Get invite information for all users in this trip
+    // This helps determine how each user was invited (by email or phone)
+    const invites = await Invite.find({
+      tripId: trip._id,
+      userId: { $in: uniqueUserIds },
+    }).select("userId inviteType");
+
+    // Create a map of userId to inviteType for quick lookup
+    // This allows us to efficiently determine how each user was invited
+    const inviteTypeMap = new Map();
+    invites.forEach((invite: any) => {
+      inviteTypeMap.set(invite.userId.toString(), invite.inviteType);
+    });
+
+    // Format response for members page with conditional contact info
+    // Logic:
+    // - Email invites: Show only email (hide phone)
+    // - Phone invites: Show both email and phone (invite type only indicates how they were invited)
+    // - No invite record: Show both email and phone (e.g., trip owner, directly added users)
+    const members = users.map((user: any) => {
+      const userId = user._id.toString();
+      const inviteType = inviteTypeMap.get(userId);
+
+      // Determine which contact info to show based on invite type
+      let email = null;
+      let phoneNumber = null;
+
+      if (inviteType === "email") {
+        // User was invited by email - show email and hide phone
+        email = user.email || null;
+        phoneNumber = null; // Hide phone for email invites
+      } else if (inviteType === "phone") {
+        // User was invited by phone - show both email and phone
+        // The invite type only indicates how they were invited, not what info to hide
+        email = user.email || null;
+        phoneNumber = user.phoneNumber || null;
+      } else {
+        // If no invite record found (e.g., trip owner, directly added users), show both
+        email = user.email || null;
+        phoneNumber = user.phoneNumber || null;
+      }
+
+      return {
+        userId,
+        email,
+        phoneNumber,
+        userRole: user.userRole,
+        preferredName: user.preferredName || null,
+        inviteType: inviteType || null, // Include invite type for debugging
+      };
+    });
 
     sendSuccessResponse(
       res,
