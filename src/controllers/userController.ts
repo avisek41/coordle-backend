@@ -2197,13 +2197,13 @@ export const createPassword = async (
 };
 
 /**
- * Get all users who have the same plan as a specific owner OR are in owner's trips
- * This endpoint allows finding users with matching planId for collaboration and analytics
+ * Get users who have the same plan as the owner but are NOT currently in owner's trips
+ * This endpoint helps find potential collaborators who share the same plan but aren't participating yet
  *
- * MANDATORY: Shows users with same plan OR users in trips
- * - Users with identical planId are always included
- * - Users currently in owner's trips are included
- * - Users removed from trips are automatically excluded (only active members)
+ * LOGIC: Shows users with same plan BUT NOT in trips
+ * - Users with identical planId are included
+ * - Users currently in owner's trips are EXCLUDED
+ * - Perfect for finding new users to invite to trips
  *
  * INVITE TRACKING: Automatically detects invite type (email/phone) even for users invited before tracking system
  * - Users with actual invite records: Shows real invite data
@@ -2217,11 +2217,10 @@ export const createPassword = async (
  * GET /api/users/same-plan/64f1a2b3c4d5e6f7g8h9i0j1
  *
  * Use cases:
- * - Trip owners finding collaborators with same plan
- * - Finding users in owner's trips (who should have inherited the plan)
- * - Tracking invite methods (email vs phone) for all users
+ * - Finding new users to invite to trips (same plan, not in trips)
+ * - Discovering potential collaborators who share the same plan
+ * - Identifying users who could join trips but haven't been invited yet
  * - Admin analytics for plan distribution
- * - Support team identifying affected users
  * - Marketing targeting specific plan users
  */
 export const getUsersWithSamePlan = async (
@@ -2289,13 +2288,13 @@ export const getUsersWithSamePlan = async (
       });
     });
 
-    // Find all users with the same plan OR users who are currently in owner's trips
+    // Find users with same plan but NOT currently in owner's trips
     const usersWithSamePlan = await User.find({
-      $or: [
-        { planId: owner.planId }, // Users with identical planId
-        { _id: { $in: Array.from(usersInOwnerTrips) } }, // Users currently in owner's trips
-      ],
-      _id: { $ne: ownerId }, // Exclude the owner from results
+      planId: owner.planId, // Users with identical planId
+      _id: { 
+        $ne: ownerId, // Exclude the owner from results
+        $nin: Array.from(usersInOwnerTrips) // Exclude users currently in trips
+      }
     }).select("_id name email phoneNumber userRole planId createdAt"); // Include planId for debugging
 
     // Get invite information for these users to show invite type
