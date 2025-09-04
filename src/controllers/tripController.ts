@@ -503,6 +503,16 @@ export const updateTrip = async (
       start_date,
       end_date,
     } = req.body;
+    const currentUser = (req as any).user;
+
+    if (!currentUser) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.UNAUTHORIZED,
+        "User authentication required"
+      );
+      return;
+    }
 
     if (!id) {
       sendErrorResponse(
@@ -527,6 +537,20 @@ export const updateTrip = async (
     const trip = await Trip.findById(id);
     if (!trip) {
       sendErrorResponse(res, STATUS_CODES.NOT_FOUND, MESSAGES.TRIP_NOT_FOUND);
+      return;
+    }
+
+    // Check if current user is trip owner or host
+    const currentUserRef = `/users/${currentUser.userId}`;
+    const isOwner = trip.owner_id === currentUser.userId;
+    const isHost = trip.hosts.includes(currentUserRef);
+
+    if (!isOwner && !isHost) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.FORBIDDEN,
+        "Only trip owners and hosts can update trips"
+      );
       return;
     }
 

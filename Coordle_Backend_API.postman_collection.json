@@ -2574,7 +2574,7 @@
                 }
               ]
             },
-            "description": "Update a specific trip with form-data (supports file upload)"
+            "description": "Update a specific trip with form-data (supports file upload). Only trip owners and hosts can update trips."
           }
         },
         {
