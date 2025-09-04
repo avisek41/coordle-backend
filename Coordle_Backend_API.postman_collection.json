@@ -2834,7 +2834,7 @@
                 }
               ]
             },
-            "description": "Add a user as host to a trip (only trip owner can do this, max 3 hosts allowed)"
+            "description": "Add a user as host to a trip (only trip owner can do this, max 3 hosts allowed). Updates user's userRole to 'host' in database. Returns updated trip members data in the same format as GET /api/trips/:tripId/members"
           }
         },
         {
@@ -2866,7 +2866,7 @@
                 }
               ]
             },
-            "description": "Remove a user from hosts in a trip (only trip owner can do this)"
+            "description": "Remove a user from hosts in a trip (only trip owner can do this). Updates user's userRole to 'traveller' in database. User remains as trip participant but role changes from host to traveller. Returns updated trip members data in the same format as GET /api/trips/:tripId/members"
           }
         },
 

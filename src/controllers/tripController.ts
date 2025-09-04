@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import mongoose from "mongoose";
-import { Trip, TripDocument, ITrip, User, Invite } from "../models";
+import { Trip, TripDocument, ITrip, User, Invite, UserRole } from "../models";
 import {
   sendSuccessResponse,
   sendErrorResponse,
@@ -13,6 +13,81 @@ import {
   deleteTripFolder,
   deleteDocument,
 } from "../utils/cloudinaryUtils";
+
+// Helper function to get trip members data
+const getTripMembersData = async (tripId: string) => {
+  const trip = await Trip.findById(tripId);
+  if (!trip) {
+    throw new Error("Trip not found");
+  }
+
+  // Get all user IDs from the trip
+  const userIds = [
+    trip.owner_id,
+    ...trip.hosts.map((host) => host.replace("/users/", "")),
+    ...trip.users.map((user) => user.replace("/users/", "")),
+  ];
+
+  // Remove duplicates
+  const uniqueUserIds = [...new Set(userIds)];
+
+  // Get user details with only required fields for members page
+  const users = await User.find({ _id: { $in: uniqueUserIds } }).select(
+    "_id email phoneNumber userRole preferredName"
+  );
+
+  // Get invite information for all users in this trip
+  const invites = await Invite.find({
+    tripId: trip._id,
+    userId: { $in: uniqueUserIds },
+  }).select("userId inviteType");
+
+  // Create a map of userId to inviteType for quick lookup
+  const inviteTypeMap = new Map();
+  invites.forEach((invite: any) => {
+    inviteTypeMap.set(invite.userId.toString(), invite.inviteType);
+  });
+
+  // Format response for members page with conditional contact info
+  const members = users.map((user: any) => {
+    const userId = user._id.toString();
+    const inviteType = inviteTypeMap.get(userId);
+
+    // Determine which contact info to show based on invite type
+    let email = null;
+    let phoneNumber = null;
+
+    if (inviteType === "email") {
+      // User was invited by email - show both email and phone
+      email = user.email || null;
+      phoneNumber = user.phoneNumber || null;
+    } else if (inviteType === "phone") {
+      // User was invited by phone - show both email and phone
+      email = user.email || null;
+      phoneNumber = user.phoneNumber || null;
+    } else {
+      // If no invite record found (e.g., trip owner, directly added users), show both
+      email = user.email || null;
+      phoneNumber = user.phoneNumber || null;
+    }
+
+    return {
+      userId,
+      email,
+      phoneNumber,
+      userRole: user.userRole,
+      preferredName: user.preferredName || null,
+      inviteType: inviteType || null,
+    };
+  });
+
+  return {
+    tripId: trip._id,
+    tripName: trip.name,
+    members,
+    totalMembers: members.length,
+  };
+};
 // Function to generate chat ID in the format: 20 character alphanumeric string
 const generateChatId = (): string => {
   const chars =
@@ -1584,7 +1659,7 @@ export const getTripMembers = async (
 
     // Format response for members page with conditional contact info
     // Logic:
-    // - Email invites: Show only email (hide phone)
+    // - Email invites: Show both email and phone
     // - Phone invites: Show both email and phone (invite type only indicates how they were invited)
     // - No invite record: Show both email and phone (e.g., trip owner, directly added users)
     const members = users.map((user: any) => {
@@ -1596,9 +1671,9 @@ export const getTripMembers = async (
       let phoneNumber = null;
 
       if (inviteType === "email") {
-        // User was invited by email - show email and hide phone
+        // User was invited by email - show both email and phone
         email = user.email || null;
-        phoneNumber = null; // Hide phone for email invites
+        phoneNumber = user.phoneNumber || null;
       } else if (inviteType === "phone") {
         // User was invited by phone - show both email and phone
         // The invite type only indicates how they were invited, not what info to hide
@@ -1747,19 +1822,20 @@ export const addHostToTrip = async (
     trip.hosts.push(userRef);
     trip.lastest_host_by = currentUser.userId;
 
+    // Update user's role to host in the database
+    user.userRole = UserRole.HOST;
+    await user.save();
+
     await trip.save();
+
+    // Get updated trip members data
+    const tripMembersData = await getTripMembersData(tripId);
 
     sendSuccessResponse(
       res,
       STATUS_CODES.OK,
       MESSAGES.HOST_ADDED_SUCCESSFULLY,
-      {
-        tripId,
-        userId,
-        userRef,
-        currentHostsCount: trip.hosts.length,
-        maxHostsAllowed: 3,
-      }
+      tripMembersData
     );
   } catch (error) {
     console.error("Error adding host to trip:", error);
@@ -1857,23 +1933,44 @@ export const removeHostFromTrip = async (
       return;
     }
 
-    // Remove user from hosts array
+    // Check if user is in the trip participants (users array)
+    if (!trip.users.includes(userRef)) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        "User is not a participant in this trip"
+      );
+      return;
+    }
+
+    // Remove user from hosts array (demote from host to traveller)
     trip.hosts = trip.hosts.filter((host) => host !== userRef);
+
+    // Ensure user remains in the users array (trip participants)
+    // This ensures they stay as a trip participant with traveller role
+    if (!trip.users.includes(userRef)) {
+      trip.users.push(userRef);
+    }
+
+    // Update user's role to traveller in the database
+    const user = await User.findById(userId);
+    if (user) {
+      user.userRole = UserRole.TRAVELLER;
+      await user.save();
+    }
+
     trip.lastest_host_remove_by = currentUser.userId;
 
     await trip.save();
+
+    // Get updated trip members data
+    const tripMembersData = await getTripMembersData(tripId);
 
     sendSuccessResponse(
       res,
       STATUS_CODES.OK,
       MESSAGES.HOST_REMOVED_SUCCESSFULLY,
-      {
-        tripId,
-        userId,
-        userRef,
-        currentHostsCount: trip.hosts.length,
-        maxHostsAllowed: 3,
-      }
+      tripMembersData
     );
   } catch (error) {
     console.error("Error removing host from trip:", error);
