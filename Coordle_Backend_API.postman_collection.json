@@ -2438,9 +2438,15 @@
           "name": "Get All Trips",
           "request": {
             "method": "GET",
-            "header": [],
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}",
+                "type": "text"
+              }
+            ],
             "url": {
-              "raw": "{{baseUrl}}/api/trips?page=1&limit=10&type=group",
+              "raw": "{{baseUrl}}/api/trips?page=1&limit=10",
               "host": ["{{baseUrl}}"],
               "path": ["api", "trips"],
               "query": [
@@ -2451,10 +2457,15 @@
                 {
                   "key": "limit",
                   "value": "10"
+                },
+                {
+                  "key": "status",
+                  "value": "upcoming",
+                  "description": "Filter by status: upcoming, past"
                 }
               ]
             },
-            "description": "Get all trips with pagination and optional filters"
+            "description": "Get all trips where user is owner or active participant. Requires authentication. Returns only trips the authenticated user owns or participates in."
           }
         },
         {

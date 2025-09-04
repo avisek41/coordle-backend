@@ -39,7 +39,7 @@ const upload = multer({
 
 // Trip CRUD routes
 router.post("/", authenticateToken, upload.single("coverImage"), createTrip);
-router.get("/", getAllTrips);
+router.get("/", authenticateToken, getAllTrips);
 router.get("/:id", getTripById);
 router.put("/:id", authenticateToken, upload.single("coverImage"), updateTrip);
 router.delete("/:id", authenticateToken, deleteTrip);

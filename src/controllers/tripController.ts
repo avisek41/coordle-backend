@@ -273,18 +273,42 @@ export const uploadTripCoverImageController = async (
   }
 };
 
-// Get all trips
+// Get all trips (filtered by user ownership and participation)
 export const getAllTrips = async (
   req: Request,
   res: Response
 ): Promise<void> => {
   try {
     const { page = 1, limit = 10, owner_id, status } = req.query;
+    const currentUser = (req as any).user;
 
-    const query: any = {};
+    if (!currentUser) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.UNAUTHORIZED,
+        "User authentication required"
+      );
+      return;
+    }
 
-    // Add filters
+    const query: any = {
+      $or: [
+        { owner_id: currentUser.userId }, // User is the owner
+        { users: `/users/${currentUser.userId}` }, // User is an active participant
+      ],
+    };
+
+    // Add additional filters
     if (owner_id) {
+      // If owner_id filter is provided, ensure user can only see their own trips or trips they participate in
+      if (owner_id !== currentUser.userId) {
+        sendErrorResponse(
+          res,
+          STATUS_CODES.FORBIDDEN,
+          "You can only view your own trips or trips you participate in"
+        );
+        return;
+      }
       query.owner_id = owner_id;
     }
 
