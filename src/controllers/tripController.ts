@@ -1174,21 +1174,22 @@ export const removeUserFromTrip = async (
       return;
     }
 
-    // Check if current user is trip owner or host
     const currentUserRef = `/users/${currentUser.userId}`;
     const isOwner = trip.owner_id === currentUser.userId;
     const isHost = trip.hosts.includes(currentUserRef);
+    const isRemovingSelf = currentUser.userId === userId;
 
-    if (!isOwner && !isHost) {
+    // Check permissions: Owner/Host can remove anyone, or user can remove themselves
+    if (!isOwner && !isHost && !isRemovingSelf) {
       sendErrorResponse(
         res,
         STATUS_CODES.FORBIDDEN,
-        "Only trip owners and hosts can remove users from trips"
+        "Only trip owners, hosts can remove users from trips, or users can remove themselves"
       );
       return;
     }
 
-    // Prevent removing the trip owner
+    // Prevent removing the trip owner (even if they try to remove themselves)
     if (trip.owner_id === userId) {
       sendErrorResponse(
         res,
@@ -1268,6 +1269,14 @@ export const removeUserFromTrip = async (
 
     await trip.save();
 
+    // Determine removal type for response message
+    const removalType = isRemovingSelf ? "self-removal" : "admin-removal";
+    const removedBy = isRemovingSelf
+      ? "themselves"
+      : isOwner
+      ? "trip owner"
+      : "trip host";
+
     sendSuccessResponse(
       res,
       STATUS_CODES.OK,
@@ -1276,6 +1285,8 @@ export const removeUserFromTrip = async (
         tripId,
         userId,
         userRef,
+        removalType,
+        removedBy,
         removalDetails: {
           usersRemoved: initialUsersCount - finalUsersCount,
           hostsRemoved: initialHostsCount - finalHostsCount,
@@ -1598,6 +1609,250 @@ export const getTripMembers = async (
     );
   } catch (error) {
     console.error("Error getting trip members:", error);
+    sendErrorResponse(
+      res,
+      STATUS_CODES.INTERNAL_SERVER_ERROR,
+      MESSAGES.INTERNAL_SERVER_ERROR
+    );
+  }
+};
+
+// Add host to trip (only trip owner can do this)
+export const addHostToTrip = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { tripId } = req.params;
+    const { userId } = req.body;
+    const currentUser = (req as any).user;
+
+    if (!currentUser) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.UNAUTHORIZED,
+        "User authentication required"
+      );
+      return;
+    }
+
+    if (!tripId || !userId) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        "Trip ID and User ID are required"
+      );
+      return;
+    }
+
+    // Validate ObjectId formats
+    if (!mongoose.Types.ObjectId.isValid(tripId)) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        "Invalid trip ID format"
+      );
+      return;
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        "Invalid user ID format"
+      );
+      return;
+    }
+
+    // Check if trip exists
+    const trip = await Trip.findById(tripId);
+    if (!trip) {
+      sendErrorResponse(res, STATUS_CODES.NOT_FOUND, MESSAGES.TRIP_NOT_FOUND);
+      return;
+    }
+
+    // Check if current user is trip owner (only owner can manage hosts)
+    if (trip.owner_id !== currentUser.userId) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.FORBIDDEN,
+        MESSAGES.ONLY_OWNER_CAN_MANAGE_HOSTS
+      );
+      return;
+    }
+
+    // Check if user exists
+    const user = await User.findById(userId);
+    if (!user) {
+      sendErrorResponse(res, STATUS_CODES.NOT_FOUND, MESSAGES.USER_NOT_FOUND);
+      return;
+    }
+
+    // Check if user is already in the trip
+    const userRef = `/users/${userId}`;
+    if (!trip.users.includes(userRef)) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        MESSAGES.USER_NOT_IN_TRIP
+      );
+      return;
+    }
+
+    // Check if user is already a host
+    if (trip.hosts.includes(userRef)) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.CONFLICT,
+        "User is already a host in this trip"
+      );
+      return;
+    }
+
+    // Check maximum hosts limit (3 hosts + owner = 4 total)
+    if (trip.hosts.length >= 3) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        MESSAGES.MAX_HOSTS_LIMIT_REACHED
+      );
+      return;
+    }
+
+    // Add user to hosts array
+    trip.hosts.push(userRef);
+    trip.lastest_host_by = currentUser.userId;
+
+    await trip.save();
+
+    sendSuccessResponse(
+      res,
+      STATUS_CODES.OK,
+      MESSAGES.HOST_ADDED_SUCCESSFULLY,
+      {
+        tripId,
+        userId,
+        userRef,
+        currentHostsCount: trip.hosts.length,
+        maxHostsAllowed: 3,
+      }
+    );
+  } catch (error) {
+    console.error("Error adding host to trip:", error);
+    sendErrorResponse(
+      res,
+      STATUS_CODES.INTERNAL_SERVER_ERROR,
+      MESSAGES.INTERNAL_SERVER_ERROR
+    );
+  }
+};
+
+// Remove host from trip (only trip owner can do this)
+export const removeHostFromTrip = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { tripId } = req.params;
+    const { userId } = req.body;
+    const currentUser = (req as any).user;
+
+    if (!currentUser) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.UNAUTHORIZED,
+        "User authentication required"
+      );
+      return;
+    }
+
+    if (!tripId || !userId) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        "Trip ID and User ID are required"
+      );
+      return;
+    }
+
+    // Validate ObjectId formats
+    if (!mongoose.Types.ObjectId.isValid(tripId)) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        "Invalid trip ID format"
+      );
+      return;
+    }
+
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        "Invalid user ID format"
+      );
+      return;
+    }
+
+    // Check if trip exists
+    const trip = await Trip.findById(tripId);
+    if (!trip) {
+      sendErrorResponse(res, STATUS_CODES.NOT_FOUND, MESSAGES.TRIP_NOT_FOUND);
+      return;
+    }
+
+    // Check if current user is trip owner (only owner can manage hosts)
+    if (trip.owner_id !== currentUser.userId) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.FORBIDDEN,
+        MESSAGES.ONLY_OWNER_CAN_MANAGE_HOSTS
+      );
+      return;
+    }
+
+    // Prevent removing the trip owner from hosts
+    if (trip.owner_id === userId) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.FORBIDDEN,
+        MESSAGES.CANNOT_REMOVE_OWNER
+      );
+      return;
+    }
+
+    const userRef = `/users/${userId}`;
+
+    // Check if user is a host
+    if (!trip.hosts.includes(userRef)) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        "User is not a host in this trip"
+      );
+      return;
+    }
+
+    // Remove user from hosts array
+    trip.hosts = trip.hosts.filter((host) => host !== userRef);
+    trip.lastest_host_remove_by = currentUser.userId;
+
+    await trip.save();
+
+    sendSuccessResponse(
+      res,
+      STATUS_CODES.OK,
+      MESSAGES.HOST_REMOVED_SUCCESSFULLY,
+      {
+        tripId,
+        userId,
+        userRef,
+        currentHostsCount: trip.hosts.length,
+        maxHostsAllowed: 3,
+      }
+    );
+  } catch (error) {
+    console.error("Error removing host from trip:", error);
     sendErrorResponse(
       res,
       STATUS_CODES.INTERNAL_SERVER_ERROR,

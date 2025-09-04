@@ -108,6 +108,12 @@ export const MESSAGES = {
   TRIP_COVER_IMAGE_REQUIRED: "Trip cover image is required",
   TRIP_COVER_IMAGE_UPLOAD_FAILED: "Failed to upload trip cover image",
   TRIP_ALREADY_EXISTS: "Trip with this ID already exists",
+  HOST_ADDED_SUCCESSFULLY: "Host added to trip successfully",
+  HOST_REMOVED_SUCCESSFULLY: "Host removed from trip successfully",
+  MAX_HOSTS_LIMIT_REACHED: "Maximum of 3 hosts allowed per trip",
+  ONLY_OWNER_CAN_MANAGE_HOSTS: "Only trip owner can manage hosts",
+  USER_NOT_IN_TRIP: "User is not part of this trip",
+  CANNOT_REMOVE_OWNER: "Cannot remove trip owner from hosts",
 
   // Trip Document messages
   TRIP_DOCUMENT_UPLOADED: "Trip document uploaded successfully",

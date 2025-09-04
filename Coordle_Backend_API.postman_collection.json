@@ -2794,6 +2794,70 @@
             "description": "Get all trip members with conditional contact info (email only if invited by email, both email and phone if invited by phone) and userId for members page"
           }
         },
+        {
+          "name": "Add Host to Trip",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"64f1a2b3c4d5e6f7g8h9i0j2\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/trips/:tripId/hosts",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "trips", ":tripId", "hosts"],
+              "variable": [
+                {
+                  "key": "tripId",
+                  "value": "64f1a2b3c4d5e6f7g8h9i0j1"
+                }
+              ]
+            },
+            "description": "Add a user as host to a trip (only trip owner can do this, max 3 hosts allowed)"
+          }
+        },
+        {
+          "name": "Remove Host from Trip",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"64f1a2b3c4d5e6f7g8h9i0j2\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/trips/:tripId/hosts",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "trips", ":tripId", "hosts"],
+              "variable": [
+                {
+                  "key": "tripId",
+                  "value": "64f1a2b3c4d5e6f7g8h9i0j1"
+                }
+              ]
+            },
+            "description": "Remove a user from hosts in a trip (only trip owner can do this)"
+          }
+        },
 
         {
           "name": "Upload Trip Document",

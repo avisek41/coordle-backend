@@ -14,6 +14,8 @@ import {
   getTripParticipants,
   checkUserInTrip,
   getTripMembers,
+  addHostToTrip,
+  removeHostFromTrip,
 } from "../controllers/tripController";
 import { authenticateToken } from "../middleware/auth";
 
@@ -66,5 +68,9 @@ router.get("/:tripId/check-user", authenticateToken, checkUserInTrip);
 
 // Trip members page route
 router.get("/:tripId/members", authenticateToken, getTripMembers);
+
+// Trip host management routes (only trip owner can access)
+router.post("/:tripId/hosts", authenticateToken, addHostToTrip);
+router.delete("/:tripId/hosts", authenticateToken, removeHostFromTrip);
 
 export default router;
