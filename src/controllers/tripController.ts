@@ -1180,6 +1180,13 @@ export const addMultipleUsersToTrip = async (
         // If userRole is "host", also add to hosts array
         if (userRole === "host" && !trip.hosts.includes(userRef)) {
           trip.hosts.push(userRef);
+
+          // Update user's global role to host if they're being added as host
+          if (user.userRole !== UserRole.HOST) {
+            user.userRole = UserRole.HOST;
+            await user.save();
+            console.log(`Updated user ${userId} global role to host`);
+          }
         }
 
         results.push({
@@ -1391,6 +1398,33 @@ export const removeUserFromTrip = async (
     }
 
     await trip.save();
+
+    // Update user's global role based on their remaining trip roles
+    // If user was removed from all trips or has no host roles, update to traveller
+    const user = await User.findById(userId);
+    if (user) {
+      // Check if user is still a host in any other trips
+      const userTrips = await Trip.find({
+        $or: [
+          { hosts: { $in: [`/users/${userId}`, userId] } },
+          { users: { $in: [`/users/${userId}`, userId] } },
+        ],
+      });
+
+      const isStillHostInAnyTrip = userTrips.some(
+        (trip) =>
+          trip.hosts.includes(`/users/${userId}`) || trip.hosts.includes(userId)
+      );
+
+      // If user is not a host in any trip, update their global role to traveller
+      if (!isStillHostInAnyTrip && user.userRole === UserRole.HOST) {
+        user.userRole = UserRole.TRAVELLER;
+        await user.save();
+        console.log(
+          `Updated user ${userId} global role from host to traveller`
+        );
+      }
+    }
 
     // Determine removal type for response message
     const removalType = isRemovingSelf ? "self-removal" : "admin-removal";
