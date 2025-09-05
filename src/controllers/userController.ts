@@ -2302,7 +2302,6 @@ export const getUsersWithSamePlan = async (
 
     const invites = await Invite.find({
       userId: { $in: userIds },
-      tripId: { $in: ownerTrips.map((trip) => trip._id) },
     }).select("userId tripId inviteType contactInfo status");
 
     // Create a map of userId to invite info
@@ -2364,6 +2363,9 @@ export const getUsersWithSamePlan = async (
       } else {
         // Create default invite info for users without invite records
         // This handles users invited before the tracking system was implemented
+        // Try to infer invite type based on which contact method was likely used for invitation
+        // If user has both email and phone, we can't determine the original invitation method
+        // In such cases, we'll default to email for backward compatibility
         const defaultInviteType = user.email
           ? InviteType.EMAIL
           : InviteType.PHONE;
