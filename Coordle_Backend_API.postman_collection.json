@@ -3084,6 +3084,139 @@
           }
         }
       ]
+    },
+    {
+      "name": "Announcements",
+      "item": [
+        {
+          "name": "Create Announcement",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"Welcome to our trip! Please arrive at the airport by 8 AM.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/trips/:tripId/announcements",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "trips", ":tripId", "announcements"],
+              "variable": [
+                {
+                  "key": "tripId",
+                  "value": "507f1f77bcf86cd799439011"
+                }
+              ]
+            },
+            "description": "Create a new announcement for a trip (only trip owners or hosts can create)"
+          }
+        },
+        {
+          "name": "Get Trip Announcements",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/trips/:tripId/announcements?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "trips", ":tripId", "announcements"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number for pagination"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Number of announcements per page"
+                }
+              ],
+              "variable": [
+                {
+                  "key": "tripId",
+                  "value": "507f1f77bcf86cd799439011"
+                }
+              ]
+            },
+            "description": "Get all announcements for a trip with pagination (accessible by all trip participants)"
+          }
+        },
+        {
+          "name": "Update Announcement",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"Updated: Please arrive at the airport by 7:30 AM instead.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/announcements/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "announcements", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "507f1f77bcf86cd799439013"
+                }
+              ]
+            },
+            "description": "Update an announcement message (only trip owners or hosts can update)"
+          }
+        },
+        {
+          "name": "Delete Announcement",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/announcements/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "announcements", ":id"],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "507f1f77bcf86cd799439013"
+                }
+              ]
+            },
+            "description": "Delete an announcement (only trip owners or hosts can delete)"
+          }
+        }
+      ]
     }
   ]
 }

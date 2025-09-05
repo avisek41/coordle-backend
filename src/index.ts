@@ -15,6 +15,7 @@ import planRoutes from "./routes/planRoutes";
 import paymentRoutes from "./routes/paymentRoutes";
 import tripRoutes from "./routes/tripRoutes";
 import tripDocumentRoutes from "./routes/tripDocumentRoutes";
+import announcementRoutes from "./routes/announcementRoutes";
 import { handleStripeWebhook } from "./controllers/webhookController";
 
 // Load environment variables
@@ -63,6 +64,7 @@ app.use("/api/plans", planRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/trips", tripRoutes);
 app.use("/api/trips", tripDocumentRoutes);
+app.use("/api", announcementRoutes);
 
 // Root endpoint
 app.get("/", (req: Request, res: Response) => {
@@ -82,6 +84,7 @@ app.get("/", (req: Request, res: Response) => {
       payments: "/api/payments",
       trips: "/api/trips",
       tripDocuments: "/api/trips/:tripId/documents",
+      announcements: "/api/trips/:tripId/announcements",
     },
   });
 });
