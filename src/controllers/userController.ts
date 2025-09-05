@@ -1851,8 +1851,8 @@ export const inviteUsersToTrip = async (
           existingUsers.push(existingUser);
           userId = existingUser.userId;
           results.push({
-            contact: email || phoneNumber,
-            contactType: email ? "email" : "phone",
+            contact: userData.email || userData.phoneNumber,
+            contactType: userData.email ? "email" : "phone",
             success: true,
             exists: true,
             userId: existingUser.userId,
@@ -1948,8 +1948,8 @@ export const inviteUsersToTrip = async (
           isNewUser = true;
 
           results.push({
-            contact: email || phoneNumber,
-            contactType: email ? "email" : "phone",
+            contact: userData.email || userData.phoneNumber,
+            contactType: userData.email ? "email" : "phone",
             success: true,
             exists: false,
             userId: savedUser._id,
@@ -1967,8 +1967,8 @@ export const inviteUsersToTrip = async (
         // Check if user is already in the trip
         if (trip.users.includes(userRef)) {
           errors.push({
-            contact: email || phoneNumber,
-            contactType: email ? "email" : "phone",
+            contact: userData.email || userData.phoneNumber,
+            contactType: userData.email ? "email" : "phone",
             error: "User is already part of this trip",
           });
           continue;
@@ -1988,8 +1988,8 @@ export const inviteUsersToTrip = async (
             const inviteData = {
               tripId: trip._id,
               invitedBy: currentUser.userId,
-              inviteType: email ? InviteType.EMAIL : InviteType.PHONE,
-              contactInfo: email || phoneNumber,
+              inviteType: userData.email ? InviteType.EMAIL : InviteType.PHONE,
+              contactInfo: userData.email || userData.phoneNumber,
               status: "accepted" as const,
               userId: userId,
             };
