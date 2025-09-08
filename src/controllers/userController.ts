@@ -690,7 +690,11 @@ export const getUserProfile = async (
       return;
     }
 
-    const user = await User.findById(userId).select("-__v");
+    const user = await User.findById(userId).select("-__v").populate({
+      path: "planId",
+      select:
+        "planName planVariant price currency features allowedHost trialDays",
+    });
     if (!user) {
       sendErrorResponse(res, STATUS_CODES.NOT_FOUND, MESSAGES.USER_NOT_FOUND);
       return;
@@ -729,7 +733,13 @@ export const getCurrentUserProfile = async (
       return;
     }
 
-    const user = await User.findById(req.user.userId).select("-__v -password");
+    const user = await User.findById(req.user.userId)
+      .select("-__v -password")
+      .populate({
+        path: "planId",
+        select:
+          "planName planVariant price currency features allowedHost trialDays",
+      });
     if (!user) {
       sendErrorResponse(res, STATUS_CODES.NOT_FOUND, MESSAGES.USER_NOT_FOUND);
       return;
