@@ -700,11 +700,32 @@ export const getUserProfile = async (
       return;
     }
 
+    // Normalize plan shape: expose currentPlan and keep planId as ObjectId
+    const userObj: any = user.toObject ? user.toObject() : (user as any);
+    if (
+      userObj.planId &&
+      typeof userObj.planId === "object" &&
+      "planName" in userObj.planId
+    ) {
+      const plan: any = userObj.planId;
+      userObj.currentPlan = {
+        _id: plan._id,
+        planName: plan.planName,
+        planVariant: plan.planVariant,
+        price: plan.price,
+        currency: plan.currency,
+        features: plan.features,
+        allowedHost: plan.allowedHost,
+        trialDays: plan.trialDays,
+      };
+      userObj.planId = plan._id;
+    }
+
     sendSuccessResponse(
       res,
       STATUS_CODES.OK,
       MESSAGES.USER_PROFILE_RETRIEVED,
-      user
+      userObj
     );
     return;
   } catch (error) {
@@ -745,11 +766,32 @@ export const getCurrentUserProfile = async (
       return;
     }
 
+    // Normalize plan shape: expose currentPlan and keep planId as ObjectId
+    const currentUserObj: any = user.toObject ? user.toObject() : (user as any);
+    if (
+      currentUserObj.planId &&
+      typeof currentUserObj.planId === "object" &&
+      "planName" in currentUserObj.planId
+    ) {
+      const plan: any = currentUserObj.planId;
+      currentUserObj.currentPlan = {
+        _id: plan._id,
+        planName: plan.planName,
+        planVariant: plan.planVariant,
+        price: plan.price,
+        currency: plan.currency,
+        features: plan.features,
+        allowedHost: plan.allowedHost,
+        trialDays: plan.trialDays,
+      };
+      currentUserObj.planId = plan._id;
+    }
+
     sendSuccessResponse(
       res,
       STATUS_CODES.OK,
       "Current user profile retrieved successfully",
-      user
+      currentUserObj
     );
     return;
   } catch (error) {
