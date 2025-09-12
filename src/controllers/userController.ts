@@ -664,6 +664,124 @@ export const getUsersByRole = async (
   }
 };
 
+export const getUsersByIds = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { userIds } = req.body;
+
+    if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        "User IDs array is required and must not be empty"
+      );
+      return;
+    }
+
+    // Validate all user IDs format
+    const invalidIds = userIds.filter(
+      (id) => !mongoose.Types.ObjectId.isValid(id)
+    );
+
+    if (invalidIds.length > 0) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        `Invalid user ID format: ${invalidIds.join(", ")}`
+      );
+      return;
+    }
+
+    // Find all users by IDs
+    const users = await User.find({ _id: { $in: userIds } })
+      .select("-__v -password")
+      .populate({
+        path: "planId",
+        select:
+          "planName planVariant price currency features allowedHost trialDays",
+      });
+
+    // Create a map for quick lookup
+    const userMap = new Map();
+    users.forEach((user) => {
+      // Normalize plan shape: expose currentPlan and keep planId as ObjectId
+      const userObj: any = user.toObject ? user.toObject() : (user as any);
+      if (
+        userObj.planId &&
+        typeof userObj.planId === "object" &&
+        "planName" in userObj.planId
+      ) {
+        const plan: any = userObj.planId;
+        userObj.currentPlan = {
+          _id: plan._id,
+          planName: plan.planName,
+          planVariant: plan.planVariant,
+          price: plan.price,
+          currency: plan.currency,
+          features: plan.features,
+          allowedHost: plan.allowedHost,
+          trialDays: plan.trialDays,
+        };
+        userObj.planId = plan._id;
+      }
+      userMap.set((user._id as any).toString(), userObj);
+    });
+
+    // Create response maintaining the order of requested IDs
+    const orderedUsers = userIds.map((id) => {
+      const user = userMap.get(id);
+      if (user) {
+        return user;
+      } else {
+        return {
+          _id: id,
+          notFound: true,
+          message: "User not found",
+        };
+      }
+    });
+
+    const foundUsers = orderedUsers.filter((user) => !user.notFound);
+    const notFoundUsers = orderedUsers.filter((user) => user.notFound);
+
+    const responseData: any = {
+      count: foundUsers.length,
+      totalRequested: userIds.length,
+      users: foundUsers,
+      summary: {
+        found: foundUsers.length,
+        notFound: notFoundUsers.length,
+        successRate: `${Math.round(
+          (foundUsers.length / userIds.length) * 100
+        )}%`,
+      },
+    };
+
+    // Only include notFound field if there are users that weren't found
+    if (notFoundUsers.length > 0) {
+      responseData.notFound = notFoundUsers;
+    }
+
+    sendSuccessResponse(
+      res,
+      STATUS_CODES.OK,
+      "Users retrieved successfully",
+      responseData
+    );
+    return;
+  } catch (error) {
+    console.error("Get users by IDs error:", error);
+    sendErrorResponse(
+      res,
+      STATUS_CODES.INTERNAL_SERVER_ERROR,
+      MESSAGES.INTERNAL_SERVER_ERROR
+    );
+    return;
+  }
+};
+
 export const getUserProfile = async (
   req: Request,
   res: Response

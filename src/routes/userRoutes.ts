@@ -5,6 +5,7 @@ import {
   sendLoginVerificationCode,
   getAllUsers,
   getUserById,
+  getUsersByIds,
   updateUser,
   deleteUser,
   getUsersByRole,
@@ -50,6 +51,7 @@ router.put("/setup-profile", authenticateToken, setupProfile);
 // User management routes
 router.get("/", getAllUsers);
 router.get("/:id", getUserById);
+router.post("/bulk", getUsersByIds);
 router.put("/:id", updateUser);
 router.delete("/:id", deleteUser);
 
