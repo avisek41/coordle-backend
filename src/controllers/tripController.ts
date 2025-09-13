@@ -52,6 +52,10 @@ const getTripMembersData = async (tripId: string) => {
   const members = users.map((user: any) => {
     const userId = user._id.toString();
     const inviteType = inviteTypeMap.get(userId);
+    const userRef = `/users/${userId}`;
+
+    // Check if user is a host for this specific trip
+    const isHost = trip.hosts.includes(userRef);
 
     // Determine which contact info to show based on invite type
     let email = null;
@@ -78,6 +82,7 @@ const getTripMembersData = async (tripId: string) => {
       userRole: user.userRole,
       preferredName: user.preferredName || null,
       inviteType: inviteType || null,
+      isHost: isHost, // Indicates if user is a host for this specific trip
     };
   });
 
@@ -215,7 +220,7 @@ export const createTrip = async (
       from_address,
       from_location: parsedFromLocation,
       chatId,
-      hosts: [`/users/${userId}`],
+      hosts: [], // Owner is not included in hosts array
       users: [`/users/${userId}`],
     };
 
@@ -1181,12 +1186,8 @@ export const addMultipleUsersToTrip = async (
         if (userRole === "host" && !trip.hosts.includes(userRef)) {
           trip.hosts.push(userRef);
 
-          // Update user's global role to host if they're being added as host
-          if (user.userRole !== UserRole.HOST) {
-            user.userRole = UserRole.HOST;
-            await user.save();
-            console.log(`Updated user ${userId} global role to host`);
-          }
+          // Note: User role is NOT changed in the database
+          // The user remains as traveller in the database but is added to hosts array for this trip
         }
 
         results.push({
@@ -1399,32 +1400,8 @@ export const removeUserFromTrip = async (
 
     await trip.save();
 
-    // Update user's global role based on their remaining trip roles
-    // If user was removed from all trips or has no host roles, update to traveller
-    const user = await User.findById(userId);
-    if (user) {
-      // Check if user is still a host in any other trips
-      const userTrips = await Trip.find({
-        $or: [
-          { hosts: { $in: [`/users/${userId}`, userId] } },
-          { users: { $in: [`/users/${userId}`, userId] } },
-        ],
-      });
-
-      const isStillHostInAnyTrip = userTrips.some(
-        (trip) =>
-          trip.hosts.includes(`/users/${userId}`) || trip.hosts.includes(userId)
-      );
-
-      // If user is not a host in any trip, update their global role to traveller
-      if (!isStillHostInAnyTrip && user.userRole === UserRole.HOST) {
-        user.userRole = UserRole.TRAVELLER;
-        await user.save();
-        console.log(
-          `Updated user ${userId} global role from host to traveller`
-        );
-      }
-    }
+    // Note: User role is NOT changed in the database
+    // Users remain as travellers in the database regardless of their host status in trips
 
     // Determine removal type for response message
     const removalType = isRemovingSelf ? "self-removal" : "admin-removal";
@@ -1880,9 +1857,8 @@ export const addHostToTrip = async (
     trip.hosts.push(userRef);
     trip.lastest_host_by = currentUser.userId;
 
-    // Update user's role to host in the database
-    user.userRole = UserRole.HOST;
-    await user.save();
+    // Note: User role is NOT changed in the database
+    // The user remains as traveller in the database but is added to hosts array for this trip
 
     await trip.save();
 
@@ -2001,21 +1977,17 @@ export const removeHostFromTrip = async (
       return;
     }
 
-    // Remove user from hosts array (demote from host to traveller)
+    // Remove user from hosts array
     trip.hosts = trip.hosts.filter((host) => host !== userRef);
 
     // Ensure user remains in the users array (trip participants)
-    // This ensures they stay as a trip participant with traveller role
+    // This ensures they stay as a trip participant
     if (!trip.users.includes(userRef)) {
       trip.users.push(userRef);
     }
 
-    // Update user's role to traveller in the database
-    const user = await User.findById(userId);
-    if (user) {
-      user.userRole = UserRole.TRAVELLER;
-      await user.save();
-    }
+    // Note: User role is NOT changed in the database
+    // The user remains as traveller in the database but is removed from hosts array for this trip
 
     trip.lastest_host_remove_by = currentUser.userId;
 

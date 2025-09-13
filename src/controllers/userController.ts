@@ -2150,20 +2150,8 @@ export const inviteUsersToTrip = async (
           if (userRole === "host" && !trip.hosts.includes(userRef)) {
             trip.hosts.push(userRef);
 
-            // Update user's global role to host if they're being invited as host
-            if (existingUser && existingUser.userRole !== UserRole.HOST) {
-              existingUser.userRole = UserRole.HOST;
-              await existingUser.save();
-              console.log(`Updated user ${userId} global role to host`);
-            } else if (isNewUser) {
-              // For new users, we need to fetch the user again since savedUser is out of scope
-              const newUser = await User.findById(userId);
-              if (newUser && newUser.userRole !== UserRole.HOST) {
-                newUser.userRole = UserRole.HOST;
-                await newUser.save();
-                console.log(`Updated new user ${userId} global role to host`);
-              }
-            }
+            // Note: User role is NOT changed in the database
+            // The user remains as traveller in the database but is added to hosts array for this trip
           }
 
           addedToTripCount++;
