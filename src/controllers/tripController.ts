@@ -54,8 +54,14 @@ const getTripMembersData = async (tripId: string) => {
     const inviteType = inviteTypeMap.get(userId);
     const userRef = `/users/${userId}`;
 
-    // Check if user is a host for this specific trip
-    const isHost = trip.hosts.includes(userRef);
+    // Determine trip role based on user's position in the trip
+    let tripRole = "traveller"; // Default role
+
+    if (trip.owner_id === userId) {
+      tripRole = "owner";
+    } else if (trip.hosts.includes(userRef)) {
+      tripRole = "host";
+    }
 
     // Determine which contact info to show based on invite type
     let email = null;
@@ -79,10 +85,10 @@ const getTripMembersData = async (tripId: string) => {
       userId,
       email,
       phoneNumber,
-      userRole: user.userRole,
+      tripRole: tripRole,
       preferredName: user.preferredName || null,
       inviteType: inviteType || null,
-      isHost: isHost, // Indicates if user is a host for this specific trip
+      isHost: trip.hosts.includes(userRef), // Indicates if user is a host for this specific trip
     };
   });
 
@@ -1700,6 +1706,16 @@ export const getTripMembers = async (
     const members = users.map((user: any) => {
       const userId = user._id.toString();
       const inviteType = inviteTypeMap.get(userId);
+      const userRef = `/users/${userId}`;
+
+      // Determine trip role based on user's position in the trip
+      let tripRole = "traveller"; // Default role
+
+      if (trip.owner_id === userId) {
+        tripRole = "owner";
+      } else if (trip.hosts.includes(userRef)) {
+        tripRole = "host";
+      }
 
       // Determine which contact info to show based on invite type
       let email = null;
@@ -1724,7 +1740,7 @@ export const getTripMembers = async (
         userId,
         email,
         phoneNumber,
-        userRole: user.userRole,
+        tripRole: tripRole,
         preferredName: user.preferredName || null,
         inviteType: inviteType || null, // Include invite type for debugging
       };
