@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import mongoose from "mongoose";
-import { Poll, IPoll, Trip, User } from "../models";
+import { Poll, IPoll, Trip, User, IUser } from "../models";
 import {
   sendSuccessResponse,
   sendErrorResponse,
@@ -23,9 +23,7 @@ export const createPoll = async (
       published = false,
       trip_id,
       createdBy,
-      status = "Open",
-      close_poll_date,
-      close_poll_time,
+      status = "Active",
       close_poll_date_time,
       display_close_poll_date,
       display_close_poll_time,
@@ -42,14 +40,14 @@ export const createPoll = async (
       return;
     }
 
-    if (!options || !Array.isArray(options) || options.length < 2) {
-      sendErrorResponse(
-        res,
-        STATUS_CODES.BAD_REQUEST,
-        "Poll must have at least 2 options"
-      );
-      return;
-    }
+    // if (!options || !Array.isArray(options) || options.length < 2) {
+    //   sendErrorResponse(
+    //     res,
+    //     STATUS_CODES.BAD_REQUEST,
+    //     "Poll must have at least 2 options"
+    //   );
+    //   return;
+    // }
 
     if (!trip_id) {
       sendErrorResponse(
@@ -123,26 +121,10 @@ export const createPoll = async (
       return;
     }
 
-    // Format dates
-    const now = new Date();
-    const createPollAt = now.toISOString();
-    const displayCreatePollAt = now.toISOString();
 
-    let closePollDate = "";
-    let closePollTime = "";
     let closePollDateTime = "";
     let displayClosePollDate = "";
     let displayClosePollTime = "";
-
-    if (close_poll_date) {
-      const closeDate = new Date(close_poll_date);
-      closePollDate = closeDate.toISOString();
-    }
-
-    if (close_poll_time) {
-      const closeTime = new Date(close_poll_time);
-      closePollTime = closeTime.toISOString();
-    }
 
     if (close_poll_date_time) {
       closePollDateTime = close_poll_date_time;
@@ -159,17 +141,13 @@ export const createPoll = async (
     // Create poll data
     const pollData: Partial<IPoll> = {
       question,
-      options,
+      options: options || [],
       allow_multi_answers,
       published,
       owner_id: user.userId,
       createdBy,
       trip_id,
-      status: status as "Open" | "Closed",
-      create_poll_at: createPollAt,
-      display_create_poll_at: displayCreatePollAt,
-      close_poll_date: closePollDate,
-      close_poll_time: closePollTime,
+      status: status as "Active" | "Closed",
       close_poll_date_time: closePollDateTime,
       display_close_poll_date: displayClosePollDate,
       display_close_poll_time: displayClosePollTime,
@@ -211,7 +189,7 @@ export const getPollsByTrip = async (
   try {
     const { tripId } = req.params;
     const { page = 1, limit = 10, status, published } = req.query;
-    const currentUser = (req as any).user;
+    const currentUser = (req as Request & { user: IUser }).user;
 
     if (!currentUser) {
       sendErrorResponse(
@@ -273,7 +251,7 @@ export const getPollsByTrip = async (
     const skip = (Number(page) - 1) * Number(limit);
 
     const polls = await Poll.find(query)
-      .sort({ create_poll_at: -1 })
+      .sort({ createdAt: -1 })
       .skip(skip)
       .limit(Number(limit));
 
@@ -439,8 +417,6 @@ export const updatePoll = async (
       allow_multi_answers,
       published,
       status,
-      close_poll_date,
-      close_poll_time,
     } = req.body;
     const currentUser = (req as any).user;
 
@@ -495,16 +471,6 @@ export const updatePoll = async (
     if (published !== undefined) updateData.published = published;
     if (status !== undefined) updateData.status = status;
 
-    // Handle date updates
-    if (close_poll_date) {
-      const closeDate = new Date(close_poll_date);
-      updateData.close_poll_date = closeDate.toISOString();
-    }
-
-    if (close_poll_time) {
-      const closeTime = new Date(close_poll_time);
-      updateData.close_poll_time = closeTime.toISOString();
-    }
 
     // Update poll
     const updatedPoll = await Poll.findByIdAndUpdate(
@@ -811,7 +777,7 @@ export const getAllPolls = async (
     const skip = (Number(page) - 1) * Number(limit);
 
     const polls = await Poll.find(query)
-      .sort({ create_poll_at: -1 })
+      .sort({ createdAt: -1 })
       .skip(skip)
       .limit(Number(limit));
 
