@@ -32,10 +32,18 @@ POST /api/polls
   "question": "What should we do for dinner?",
   "options": ["Italian", "Chinese", "Mexican", "Thai"],
   "allow_multi_answers": false,
-  "published": false,
+  "published": true,
   "trip_id": "60f7b3b3b3b3b3b3b3b3b3b3",
-  "close_poll_date": "2024-12-31T23:59:59.000Z",
-  "close_poll_time": "2024-12-31T18:00:00.000Z"
+  "createdBy": "689452c56a3c22c49f65bb1b",
+  "trip_id": "68dd0f98ab55dea0f1d13489",
+  "status": "Active",
+  "close_poll_date_time": "2025-10-31T12:06:00+05:30",
+  "display_close_poll_date": "31/10/2025",
+  "display_close_poll_time": "12:06 PM",
+  "reminders": [
+      5,
+      15
+  ]
 }
 ```
 
@@ -48,8 +56,6 @@ POST /api/polls
 | `allow_multi_answers` | boolean | No | Allow multiple selections | - |
 | `published` | boolean | No | Whether poll is published | - |
 | `trip_id` | string | Yes | Trip ID where poll belongs | - |
-| `close_poll_date` | string | No | Poll close date (ISO string) | - |
-| `close_poll_time` | string | No | Poll close time (ISO string) | - |
 
 #### Success Response (201 Created)
 
@@ -60,22 +66,24 @@ POST /api/polls
   "message": "Poll created successfully",
   "data": {
     "_id": "poll_mongodb_id",
-    "id": "0BEi784KSPmeGneG9c6H",
     "question": "What should we do for dinner?",
     "options": ["Italian", "Chinese", "Mexican", "Thai"],
     "allow_multi_answers": false,
-    "published": false,
-    "owner_id": "user_id",
-    "trip_id": "60f7b3b3b3b3b3b3b3b3b3b3",
+    "published": true,
+    "createdBy": "689452c56a3c22c49f65bb1b",
+    "trip_id": "68dd0f98ab55dea0f1d13489",
     "status": "Active",
-    "create_poll_at": "2024-01-01T12:00:00.000Z",
-    "close_poll_date": "2024-12-31T23:59:59.000Z",
-    "close_poll_time": "2024-12-31T18:00:00.000Z",
-    "reminders": [],
-    "duration": "365 days",
-    "status_display": "Active for voting",
-    "createdAt": "2024-01-01T12:00:00.000Z",
-    "updatedAt": "2024-01-01T12:00:00.000Z"
+    "close_poll_date_time": "2025-10-31T12:06:00+05:30",
+    "display_close_poll_date": "31/10/2025",
+    "display_close_poll_time": "12:06 PM",
+    "reminders": [
+        5,
+        15
+    ],
+    "createdAt": "2025-10-07T16:38:27.973Z",
+    "updatedAt": "2025-10-07T16:38:27.973Z",
+    "__v": 0,
+    "duration": "24 days",
   },
   "timestamp": "2024-01-01T12:00:00.000Z"
 }
@@ -118,12 +126,23 @@ GET /api/polls
         "owner_id": "user_id",
         "trip_id": "60f7b3b3b3b3b3b3b3b3b3b3",
         "status": "Active",
-        "create_poll_at": "2024-01-01T12:00:00.000Z",
-        "close_poll_date": "2024-12-31T23:59:59.000Z",
-        "close_poll_time": "2024-12-31T18:00:00.000Z",
+        "createdBy": {
+            "_id": "689452c56a3c22c49f65bb1b",
+            "email": "avisek@york.ie",
+            "preferredName": "Avi12",
+            "profilePhotoURL": "url"
+        },
+        "trip_id": "68dd0f98ab55dea0f1d13489",
+        "status": "Active",
+        "close_poll_date_time": "2025-10-31T12:06:00+05:30",
+        "display_close_poll_date": "31/10/2025",
+        "display_close_poll_time": "12:06 PM",
+        "reminders": [
+            5,
+            15
+        ]
         "reminders": [],
         "duration": "365 days",
-        "status_display": "Active for voting",
         "createdAt": "2024-01-01T12:00:00.000Z",
         "updatedAt": "2024-01-01T12:00:00.000Z"
       }
@@ -170,12 +189,8 @@ GET /api/polls/:id
     "owner_id": "user_id",
     "trip_id": "60f7b3b3b3b3b3b3b3b3b3b3",
     "status": "Active",
-    "create_poll_at": "2024-01-01T12:00:00.000Z",
-    "close_poll_date": "2024-12-31T23:59:59.000Z",
-    "close_poll_time": "2024-12-31T18:00:00.000Z",
     "reminders": [],
     "duration": "365 days",
-    "status_display": "Active for voting",
     "createdAt": "2024-01-01T12:00:00.000Z",
     "updatedAt": "2024-01-01T12:00:00.000Z"
   },
@@ -204,12 +219,17 @@ All fields are optional. Only send the fields you want to update:
 ```json
 {
   "question": "Updated question?",
-  "options": ["Option 1", "Option 2", "Option 3"],
-  "allow_multi_answers": true,
+  "options": ["Option 1", "Option 2", "Option 3"],  "allow_multi_answers": true,
   "published": true,
+  "trip_id": "68dd0f98ab55dea0f1d13489",
   "status": "Active",
-  "close_poll_date": "2024-12-31T23:59:59.000Z",
-  "close_poll_time": "2024-12-31T18:00:00.000Z"
+  "close_poll_date_time": "2025-10-31T12:06:00+05:30",
+  "display_close_poll_date": "31/10/2025",
+  "display_close_poll_time": "12:06 PM",
+  "reminders": [
+      5,
+      15
+  ]
 }
 ```
 
@@ -230,12 +250,8 @@ All fields are optional. Only send the fields you want to update:
     "owner_id": "user_id",
     "trip_id": "60f7b3b3b3b3b3b3b3b3b3b3",
     "status": "Active",
-    "create_poll_at": "2024-01-01T12:00:00.000Z",
-    "close_poll_date": "2024-12-31T23:59:59.000Z",
-    "close_poll_time": "2024-12-31T18:00:00.000Z",
     "reminders": [],
     "duration": "365 days",
-    "status_display": "Active for voting",
     "createdAt": "2024-01-01T12:00:00.000Z",
     "updatedAt": "2024-01-01T12:00:00.000Z"
   },
@@ -299,12 +315,8 @@ POST /api/polls/:id/publish
     "owner_id": "user_id",
     "trip_id": "60f7b3b3b3b3b3b3b3b3b3b3",
     "status": "Active",
-    "create_poll_at": "2024-01-01T12:00:00.000Z",
-    "close_poll_date": "2024-12-31T23:59:59.000Z",
-    "close_poll_time": "2024-12-31T18:00:00.000Z",
     "reminders": [],
     "duration": "365 days",
-    "status_display": "Active for voting",
     "createdAt": "2024-01-01T12:00:00.000Z",
     "updatedAt": "2024-01-01T12:00:00.000Z"
   },
@@ -343,12 +355,8 @@ POST /api/polls/:id/close
     "owner_id": "user_id",
     "trip_id": "60f7b3b3b3b3b3b3b3b3b3b3",
     "status": "Closed",
-    "create_poll_at": "2024-01-01T12:00:00.000Z",
-    "close_poll_date": "2024-12-31T23:59:59.000Z",
-    "close_poll_time": "2024-12-31T18:00:00.000Z",
     "reminders": [],
     "duration": "365 days",
-    "status_display": "Voting closed",
     "createdAt": "2024-01-01T12:00:00.000Z",
     "updatedAt": "2024-01-01T12:00:00.000Z"
   },
@@ -398,12 +406,8 @@ GET /api/polls/trip/:tripId
         "owner_id": "user_id",
         "trip_id": "60f7b3b3b3b3b3b3b3b3b3b3",
         "status": "Active",
-        "create_poll_at": "2024-01-01T12:00:00.000Z",
-        "close_poll_date": "2024-12-31T23:59:59.000Z",
-        "close_poll_time": "2024-12-31T18:00:00.000Z",
         "reminders": [],
         "duration": "365 days",
-        "status_display": "Active for voting",
         "createdAt": "2024-01-01T12:00:00.000Z",
         "updatedAt": "2024-01-01T12:00:00.000Z"
       }
@@ -503,7 +507,6 @@ curl -X POST http://localhost:3000/api/polls \
     "allow_multi_answers": false,
     "published": true,
     "trip_id": "60f7b3b3b3b3b3b3b3b3b3b3",
-    "close_poll_date": "2024-12-31T23:59:59.000Z"
   }'
 ```
 
@@ -568,7 +571,7 @@ Polls have two possible statuses:
 3. **Status Management**: Use publish/close endpoints to manage poll status
 4. **Pagination**: All list endpoints support pagination
 5. **Filtering**: Use query parameters to filter polls by status, published state, etc.
-6. **Virtual Fields**: Responses include calculated fields like `duration` and `status_display`
+6. **Virtual Fields**: Responses include calculated fields like `duration`
 7. **Unique IDs**: Each poll gets a unique 20-character custom ID for easy reference
 
 ## Testing
