@@ -3,14 +3,14 @@ import mongoose, { Document, Schema } from "mongoose";
 // Define the Poll interface
 export interface IPoll extends Document {
   question: string;
-  options?: string[];
+  options: string[];
   allow_multi_answers?: boolean;
   published?: boolean;
   owner_id?: string;
   createdBy: string;
   trip_id: string;
   status: "Active" | "Closed";
-  close_poll_date_time?: string;
+  close_poll_date_time: string;
   display_close_poll_date?: string;
   display_close_poll_time?: string;
   reminders?: number[];
@@ -69,7 +69,7 @@ const pollSchema = new Schema<IPoll>(
     },
     close_poll_date_time: {
       type: String,
-      required: false,
+      required: true,
       trim: true,
     },
     display_close_poll_date: {
@@ -85,6 +85,7 @@ const pollSchema = new Schema<IPoll>(
     reminders: [
       {
         type: Number,
+        required: false,
         default: [],
       },
     ],
@@ -103,11 +104,11 @@ pollSchema.index({ published: 1 });
 // Pre-save middleware to validate poll options
 pollSchema.pre("save", function (next) {
   // Ensure there are at least 2 options for a poll
-  // if (this.options.length < 2) {
-  //   return next(new Error("Poll must have at least 2 options"));
-  // }
+  if (this.options.length < 2) {
+    return next(new Error("Poll must have at least 2 options"));
+  }
   
-  // // Ensure there are no more than 10 options
+  // Ensure there are no more than 10 options
   if (this.options && this.options.length > 10) {
     return next(new Error("Poll cannot have more than 10 options"));
   }

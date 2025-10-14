@@ -8,8 +8,6 @@ import {
   MESSAGES,
 } from "../utils/apiResponse";
 
-
-
 // Create a new poll
 export const createPoll = async (
   req: Request,
@@ -40,14 +38,14 @@ export const createPoll = async (
       return;
     }
 
-    // if (!options || !Array.isArray(options) || options.length < 2) {
-    //   sendErrorResponse(
-    //     res,
-    //     STATUS_CODES.BAD_REQUEST,
-    //     "Poll must have at least 2 options"
-    //   );
-    //   return;
-    // }
+    if (!options || !Array.isArray(options) || options.length < 2) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        "Poll must have at least 2 options"
+      );
+      return;
+    }
 
     if (!trip_id) {
       sendErrorResponse(
@@ -98,6 +96,63 @@ export const createPoll = async (
       return;
     }
 
+    // Validate close_poll_date_time if provided
+    if (close_poll_date_time) {
+      const closeDate = new Date(close_poll_date_time);
+      const currentDate = new Date();
+      
+      // Check if the date is valid
+      if (isNaN(closeDate.getTime())) {
+        sendErrorResponse(
+          res,
+          STATUS_CODES.BAD_REQUEST,
+          "Invalid close poll date time format"
+        );
+        return;
+      }
+      
+      // Check if the date is in the past or current time
+      if (closeDate <= currentDate) {
+        sendErrorResponse(
+          res,
+          STATUS_CODES.BAD_REQUEST,
+          "Close poll date time must be in the future"
+        );
+        return;
+      }
+
+      // Check if there's at least 5 minutes difference
+      const timeDifference = closeDate.getTime() - currentDate.getTime();
+      const timeDifferenceMinutes = Math.floor(timeDifference / (1000 * 60));
+      
+      if (timeDifferenceMinutes < 5) {
+        sendErrorResponse(
+          res,
+          STATUS_CODES.BAD_REQUEST,
+          "Close poll date time must be at least 5 minutes in the future"
+        );
+        return;
+      }
+
+      // Check if there's sufficient time for reminders
+      if (reminders && Array.isArray(reminders) && reminders.length > 0) {
+        const timeUntilClose = closeDate.getTime() - currentDate.getTime();
+        const timeUntilCloseMinutes = Math.floor(timeUntilClose / (1000 * 60));
+        
+        // Find the maximum reminder time (in minutes)
+        const maxReminderTime = Math.max(...reminders);
+        
+        // Check if there's enough time for the longest reminder
+        if (timeUntilCloseMinutes < maxReminderTime) {
+          sendErrorResponse(
+            res,
+            STATUS_CODES.BAD_REQUEST,
+            `close poll date time must be at least ${maxReminderTime} minutes in the future to accommodate the selected reminder time(s)`
+          );
+          return;
+        }
+      }
+    }
 
     // Check if trip exists
     const trip = await Trip.findById(trip_id);
@@ -747,7 +802,7 @@ export const getAllPolls = async (
   res: Response
 ): Promise<void> => {
   try {
-    const { page = 1, limit = 10, status, published, trip_id } = req.query;
+    const { page = 1, limit = 10, status, published, trip_id, id } = req.query;
     const currentUser = (req as any).user;
 
     if (!currentUser) {
@@ -755,6 +810,78 @@ export const getAllPolls = async (
         res,
         STATUS_CODES.UNAUTHORIZED,
         "User authentication required"
+      );
+      return;
+    }
+
+    // If id is provided as query parameter, return single poll
+    if (id) {
+      // Validate ObjectId format
+      if (!mongoose.Types.ObjectId.isValid(id as string)) {
+        sendErrorResponse(
+          res,
+          STATUS_CODES.BAD_REQUEST,
+          "Invalid poll ID format"
+        );
+        return;
+      }
+
+      // Find poll by MongoDB _id
+      const poll = await Poll.findById(id);
+
+      if (!poll) {
+        sendErrorResponse(res, STATUS_CODES.NOT_FOUND, "Poll not found");
+        return;
+      }
+
+      // Check if user is part of the trip
+      const trip = await Trip.findById(poll.trip_id);
+      if (!trip) {
+        sendErrorResponse(res, STATUS_CODES.NOT_FOUND, "Trip not found");
+        return;
+      }
+
+      const currentUserRef = `/users/${currentUser.userId}`;
+      const isOwner = trip.owner_id === currentUser.userId;
+      const isHost = trip.hosts.includes(currentUserRef);
+      const isTraveler = trip.users.includes(currentUserRef);
+
+      if (!isOwner && !isHost && !isTraveler) {
+        sendErrorResponse(
+          res,
+          STATUS_CODES.FORBIDDEN,
+          "You don't have access to this poll"
+        );
+        return;
+      }
+
+      // Convert to object to include virtual fields
+      const pollObj = poll.toObject() as any;
+      
+      // Get user information for the poll owner
+      const owner = await User.findById(poll.owner_id).select('_id email preferredName profilePhoto');
+      
+      if (owner) {
+        pollObj.createdBy = {
+          _id: owner._id,
+          email: owner.email,
+          preferredName: owner.preferredName,
+          profilePhotoURL: owner.profilePhoto?.url || null
+        };
+      } else {
+        pollObj.createdBy = {
+          _id: poll.owner_id,
+          email: null,
+          preferredName: null,
+          profilePhotoURL: null
+        };
+      }
+
+      sendSuccessResponse(
+        res,
+        STATUS_CODES.OK,
+        "Poll retrieved successfully",
+        pollObj
       );
       return;
     }
