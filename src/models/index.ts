@@ -20,5 +20,5 @@ export { default as Trip, type ITrip } from "./Trip";
 export { default as TripDocument, type ITripDocument } from "./TripDocument";
 export { default as Announcement, type IAnnouncement } from "./Announcement";
 export { Invite, InviteType, type IInvite } from "./Invite";
-export { default as Poll, type IPoll } from "./Poll";
+export { default as Poll, type IPoll, type IVote } from "./Poll";
 export { default as KnowledgeBase, type IKnowledgeBase } from "./KnowledgeBase";
