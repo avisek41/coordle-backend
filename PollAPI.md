@@ -344,7 +344,7 @@ GET /api/polls/trip/:tripId
 | `page` | number | Page number (default: 1) | `?page=1` |
 | `limit` | number | Items per page (default: 10) | `?limit=20` |
 | `status` | string | Filter by status ("Active", "Closed") | `?status=Active` |
-| `published` | boolean | Filter by published status | `?published=true` |
+| `published` | boolean | Filter by published status | `?published=false` |
 
 #### Success Response (200 OK)
 
@@ -361,7 +361,7 @@ GET /api/polls/trip/:tripId
         "question": "What should we do for dinner?",
         "options": ["Italian", "Chinese", "Mexican", "Thai"],
         "allow_multi_answers": false,
-        "published": true,
+        "published": false,
         "owner_id": "user_id",
         "trip_id": "60f7b3b3b3b3b3b3b3b3b3b3",
         "status": "Active",
@@ -464,7 +464,7 @@ curl -X POST http://localhost:3000/api/polls \
     "question": "Which restaurant should we go to?",
     "options": ["Restaurant A", "Restaurant B", "Restaurant C"],
     "allow_multi_answers": false,
-    "published": true,
+    "published": false,
     "trip_id": "60f7b3b3b3b3b3b3b3b3b3b3",
   }'
 ```
