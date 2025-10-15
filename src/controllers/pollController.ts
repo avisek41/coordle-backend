@@ -236,6 +236,91 @@ export const createPoll = async (
   }
 };
 
+// Publish poll
+export const publishPoll = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const currentUser = (req as any).user;
+
+    if (!currentUser) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.UNAUTHORIZED,
+        "User authentication required"
+      );
+      return;
+    }
+
+    if (!id) {
+      sendErrorResponse(res, STATUS_CODES.BAD_REQUEST, "Poll ID is required");
+      return;
+    }
+
+    // Validate ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        "Invalid poll ID format"
+      );
+      return;
+    }
+
+    // Find poll by MongoDB _id
+    const poll = await Poll.findById(id);
+    if (!poll) {
+      sendErrorResponse(res, STATUS_CODES.NOT_FOUND, "Poll not found");
+      return;
+    }
+
+    // Check if current user is poll owner
+    if (poll.owner_id !== currentUser.userId) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.FORBIDDEN,
+        "Only poll owner can publish the poll"
+      );
+      return;
+    }
+
+    // Update poll to published
+    const updatedPoll = await Poll.findByIdAndUpdate(
+      id,
+      { 
+        $set: { 
+          published: true,
+        } 
+      },
+      { new: true }
+    );
+
+    if (!updatedPoll) {
+      sendErrorResponse(res, STATUS_CODES.NOT_FOUND, "Poll not found");
+      return;
+    }
+
+    // Convert to object to include virtual fields
+    const pollResponse = updatedPoll.toObject();
+
+    sendSuccessResponse(
+      res,
+      STATUS_CODES.OK,
+      "Poll published successfully",
+      pollResponse
+    );
+  } catch (error) {
+    console.error("Error publishing poll:", error);
+    sendErrorResponse(
+      res,
+      STATUS_CODES.INTERNAL_SERVER_ERROR,
+      MESSAGES.INTERNAL_SERVER_ERROR
+    );
+  }
+};
+
 // Get all polls for a trip
 export const getPollsByTrip = async (
   req: Request,

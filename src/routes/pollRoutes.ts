@@ -5,6 +5,7 @@ import {
   getPollById,
   updatePoll,
   deletePoll,
+  publishPoll,
   closePoll,
   getAllPolls,
   voteOnPoll,
@@ -22,6 +23,7 @@ router.put("/:id", authenticateToken, updatePoll);
 router.delete("/:id", authenticateToken, deletePoll);
 
 // Poll action routes
+router.post("/:id/publish", authenticateToken, publishPoll);
 router.post("/:id/close", authenticateToken, closePoll);
 
 // Voting routes
