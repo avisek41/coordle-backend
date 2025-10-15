@@ -1,5 +1,12 @@
 import mongoose, { Document, Schema } from "mongoose";
 
+// Define the Vote interface
+export interface IVote {
+  userId: mongoose.Types.ObjectId;
+  selectedOptionText: string[]; // Array of selected option texts
+  votedAt: Date;
+}
+
 // Define the Poll interface
 export interface IPoll extends Document {
   question: string;
@@ -14,6 +21,7 @@ export interface IPoll extends Document {
   display_close_poll_date?: string;
   display_close_poll_time?: string;
   reminders?: number[];
+  votes?: IVote[]; // Array of votes
   createdAt: Date;
   updatedAt: Date;
 }
@@ -87,6 +95,24 @@ const pollSchema = new Schema<IPoll>(
         type: Number,
         required: false,
         default: [],
+      },
+    ],
+    votes: [
+      {
+        userId: {
+          type: Schema.Types.ObjectId,
+          ref: 'User',
+          required: true,
+        },
+        selectedOptionText: [{
+          type: String,
+          required: true,
+          trim: true,
+        }],
+        votedAt: {
+          type: Date,
+          default: Date.now,
+        },
       },
     ],
   },

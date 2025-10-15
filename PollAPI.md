@@ -283,47 +283,6 @@ DELETE /api/polls/:id
   "timestamp": "2024-01-01T12:00:00.000Z"
 }
 ```
-
-### 6. Publish Poll
-
-Publish a poll to make it available for voting (owner only).
-
-```
-POST /api/polls/:id/publish
-```
-
-#### Path Parameters
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `id` | string | Yes | Poll's custom ID |
-
-#### Success Response (200 OK)
-
-```json
-{
-  "success": true,
-  "statusCode": 200,
-  "message": "Poll published successfully",
-  "data": {
-    "_id": "poll_mongodb_id",
-    "id": "0BEi784KSPmeGneG9c6H",
-    "question": "What should we do for dinner?",
-    "options": ["Italian", "Chinese", "Mexican", "Thai"],
-    "allow_multi_answers": false,
-    "published": true,
-    "owner_id": "user_id",
-    "trip_id": "60f7b3b3b3b3b3b3b3b3b3b3",
-    "status": "Active",
-    "reminders": [],
-    "duration": "365 days",
-    "createdAt": "2024-01-01T12:00:00.000Z",
-    "updatedAt": "2024-01-01T12:00:00.000Z"
-  },
-  "timestamp": "2024-01-01T12:00:00.000Z"
-}
-```
-
 ### 7. Close Poll
 
 Close a poll to stop voting (owner only).
@@ -527,13 +486,6 @@ curl -X PUT http://localhost:3000/api/polls/0BEi784KSPmeGneG9c6H \
     "question": "Updated question?",
     "published": true
   }'
-```
-
-### Example 5: Publish a poll
-
-```bash
-curl -X POST http://localhost:3000/api/polls/0BEi784KSPmeGneG9c6H/publish \
-  -H "Authorization: Bearer your-jwt-token"
 ```
 
 ### Example 6: Close a poll

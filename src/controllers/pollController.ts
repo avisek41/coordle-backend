@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import mongoose from "mongoose";
-import { Poll, IPoll, Trip, User, IUser } from "../models";
+import { Poll, IPoll, Trip, User, IUser, IVote } from "../models";
 import {
   sendSuccessResponse,
   sendErrorResponse,
@@ -421,19 +421,51 @@ export const getPollById = async (
       return;
     }
 
+    // Get poll with vote information
+    const pollWithVotes = await Poll.findById(id)
+      .populate('createdBy', 'preferredName profilePhoto')
+      .populate('votes.userId', 'preferredName profilePhoto');
+
+    if (!pollWithVotes) {
+      sendErrorResponse(res, STATUS_CODES.NOT_FOUND, "Poll not found");
+      return;
+    }
+
     // Convert to object to include virtual fields
-    const pollObj = poll.toObject() as any;
+    const pollObj = pollWithVotes.toObject() as any;
     
-    // Get user information for the poll owner
-    const owner = await User.findById(poll.owner_id).select('_id email preferredName profilePhoto');
-    
-    if (owner) {
-      pollObj.createdBy = {
-        _id: owner._id,
-        email: owner.email,
-        preferredName: owner.preferredName,
-        profilePhotoURL: owner.profilePhoto?.url || null
+    // Format options with vote counts and user selection status
+    pollObj.options = pollWithVotes.options?.map((option: string) => {
+      const optionVotes = pollWithVotes.votes?.filter(
+        (vote: any) => vote.selectedOptionText.includes(option)
+      ) || [];
+      
+      const isSelectedByUser = optionVotes.some(
+        (vote: any) => vote.userId._id.toString() === currentUser.userId
+      );
+
+      return {
+        text: option,
+        vote_count: optionVotes.length,
+        is_selected_by_user: isSelectedByUser,
+        voters: optionVotes.map((vote: any) => ({
+          _id: vote.userId._id,
+          preferredName: vote.userId.preferredName,
+          profilePhotoURL: vote.userId.profilePhoto?.url || null,
+        })).slice(0, 3), // Limit to 3 voters for display
       };
+    }) || [];
+
+     // Get user information for the poll owner
+     const owner = await User.findById(poll.owner_id).select('_id email preferredName profilePhoto');
+    
+     if (owner) {
+       pollObj.createdBy = {
+         _id: owner._id,
+         email: owner.email,
+         preferredName: owner.preferredName,
+         profilePhotoURL: owner.profilePhoto?.url || null
+       };
     } else {
       pollObj.createdBy = {
         _id: poll.owner_id,
@@ -617,92 +649,6 @@ export const deletePoll = async (
     sendSuccessResponse(res, STATUS_CODES.OK, "Poll deleted successfully");
   } catch (error) {
     console.error("Error deleting poll:", error);
-    sendErrorResponse(
-      res,
-      STATUS_CODES.INTERNAL_SERVER_ERROR,
-      MESSAGES.INTERNAL_SERVER_ERROR
-    );
-  }
-};
-
-// Publish poll
-export const publishPoll = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
-  try {
-    const { id } = req.params;
-    const currentUser = (req as any).user;
-
-    if (!currentUser) {
-      sendErrorResponse(
-        res,
-        STATUS_CODES.UNAUTHORIZED,
-        "User authentication required"
-      );
-      return;
-    }
-
-    if (!id) {
-      sendErrorResponse(res, STATUS_CODES.BAD_REQUEST, "Poll ID is required");
-      return;
-    }
-
-    // Validate ObjectId format
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      sendErrorResponse(
-        res,
-        STATUS_CODES.BAD_REQUEST,
-        "Invalid poll ID format"
-      );
-      return;
-    }
-
-    // Find poll by MongoDB _id
-    const poll = await Poll.findById(id);
-    if (!poll) {
-      sendErrorResponse(res, STATUS_CODES.NOT_FOUND, "Poll not found");
-      return;
-    }
-
-    // Check if current user is poll owner
-    if (poll.owner_id !== currentUser.userId) {
-      sendErrorResponse(
-        res,
-        STATUS_CODES.FORBIDDEN,
-        "Only poll owner can publish the poll"
-      );
-      return;
-    }
-
-    // Update poll to published
-    const updatedPoll = await Poll.findByIdAndUpdate(
-      id,
-      { 
-        $set: { 
-          published: true, 
-          status: "Active" 
-        } 
-      },
-      { new: true }
-    );
-
-    if (!updatedPoll) {
-      sendErrorResponse(res, STATUS_CODES.NOT_FOUND, "Poll not found");
-      return;
-    }
-
-    // Convert to object to include virtual fields
-    const pollResponse = updatedPoll.toObject();
-
-    sendSuccessResponse(
-      res,
-      STATUS_CODES.OK,
-      "Poll published successfully",
-      pollResponse
-    );
-  } catch (error) {
-    console.error("Error publishing poll:", error);
     sendErrorResponse(
       res,
       STATUS_CODES.INTERNAL_SERVER_ERROR,
@@ -949,6 +895,323 @@ export const getAllPolls = async (
     });
   } catch (error) {
     console.error("Error getting polls:", error);
+    sendErrorResponse(
+      res,
+      STATUS_CODES.INTERNAL_SERVER_ERROR,
+      MESSAGES.INTERNAL_SERVER_ERROR
+    );
+  }
+};
+
+// Vote on a poll
+export const voteOnPoll = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { selectedOptionTexts } = req.body; // Array of selected option texts
+    const currentUser = (req as any).user;
+
+    if (!currentUser) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.UNAUTHORIZED,
+        "User authentication required"
+      );
+      return;
+    }
+
+    if (!id) {
+      sendErrorResponse(res, STATUS_CODES.BAD_REQUEST, "Poll ID is required");
+      return;
+    }
+
+    // Validate ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        "Invalid poll ID format"
+      );
+      return;
+    }
+
+    // Validate selectedOptionTexts
+    if (!Array.isArray(selectedOptionTexts) || selectedOptionTexts.length === 0) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        "At least one option must be selected"
+      );
+      return;
+    }
+
+    // Find poll by MongoDB _id
+    const poll = await Poll.findById(id);
+    if (!poll) {
+      sendErrorResponse(res, STATUS_CODES.NOT_FOUND, "Poll not found");
+      return;
+    }
+
+    // Check if poll is published and active
+    if (!poll.published || poll.status === "Closed") {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        "Cannot vote on a closed or unpublished poll"
+      );
+      return;
+    }
+
+    // Check if poll close time has passed
+    if (poll.close_poll_date_time && new Date(poll.close_poll_date_time) <= new Date()) {
+      // Update poll status to closed
+      await Poll.findByIdAndUpdate(id, { status: "Closed" });
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        "Cannot vote on a poll that has already closed"
+      );
+      return;
+    }
+
+    // Check if user is part of the trip
+    const trip = await Trip.findById(poll.trip_id);
+    if (!trip) {
+      sendErrorResponse(res, STATUS_CODES.NOT_FOUND, "Trip not found");
+      return;
+    }
+
+    const currentUserRef = `/users/${currentUser.userId}`;
+    const isOwner = trip.owner_id === currentUser.userId;
+    const isHost = trip.hosts.includes(currentUserRef);
+    const isTraveler = trip.users.includes(currentUserRef);
+
+    if (!isOwner && !isHost && !isTraveler) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.FORBIDDEN,
+        "You don't have access to this poll"
+      );
+      return;
+    }
+
+    // Validate option texts
+    const validOptionTexts = selectedOptionTexts.filter(
+      (optionText: string) => 
+        typeof optionText === 'string' && 
+        optionText.trim().length > 0 &&
+        poll.options?.includes(optionText.trim())
+    );
+
+    if (validOptionTexts.length !== selectedOptionTexts.length) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        "Invalid option texts provided. Please select from available options."
+      );
+      return;
+    }
+
+    // Enforce single select if applicable
+    if (!poll.allow_multi_answers && validOptionTexts.length > 1) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        "This is a single-select poll. Please choose only one option."
+      );
+      return;
+    }
+
+    // Remove existing votes from this user
+    poll.votes = poll.votes?.filter(
+      (vote: IVote) => vote.userId.toString() !== currentUser.userId
+    ) || [];
+
+    // Add new vote with all selected options
+    const newVote: IVote = {
+      userId: new mongoose.Types.ObjectId(currentUser.userId),
+      selectedOptionText: validOptionTexts.map((optionText: string) => optionText.trim()),
+      votedAt: new Date(),
+    };
+
+    poll.votes = [...(poll.votes || []), newVote];
+    await poll.save();
+
+    // Get updated poll with vote counts
+    const updatedPoll = await Poll.findById(id)
+      .populate('createdBy', 'preferredName profilePhoto')
+      .populate('votes.userId', 'preferredName profilePhoto');
+
+    if (!updatedPoll) {
+      sendErrorResponse(res, STATUS_CODES.NOT_FOUND, "Poll not found");
+      return;
+    }
+
+    // Format response with vote counts and user selection status
+    const formattedPoll = {
+      ...updatedPoll.toObject(),
+      options: updatedPoll.options?.map((option: string) => {
+        const optionVotes = updatedPoll.votes?.filter(
+          (vote: any) => vote.selectedOptionText.includes(option)
+        ) || [];
+        
+        const isSelectedByUser = optionVotes.some(
+          (vote: any) => vote.userId._id.toString() === currentUser.userId
+        );
+
+        return {
+          text: option,
+          vote_count: optionVotes.length,
+          is_selected_by_user: isSelectedByUser,
+          voters: optionVotes.map((vote: any) => ({
+            _id: vote.userId._id,
+            preferredName: vote.userId.preferredName,
+            profilePhotoURL: vote.userId.profilePhoto?.url || null,
+          })).slice(0, 3), // Limit to 3 voters for display
+        };
+      }) || [],
+      votes: updatedPoll.votes?.map((vote: any) => ({
+        user: {
+          _id: vote.userId._id,
+          preferredName: vote.userId.preferredName,
+          profilePhotoURL: vote.userId.profilePhoto?.url || null
+        },
+        selectedOptionText: vote.selectedOptionText,
+        votedAt: vote.votedAt,
+        _id: vote._id
+      })) || []
+    };
+
+    sendSuccessResponse(
+      res,
+      STATUS_CODES.OK,
+      "Vote cast successfully",
+      formattedPoll
+    );
+  } catch (error) {
+    console.error("Error voting on poll:", error);
+    sendErrorResponse(
+      res,
+      STATUS_CODES.INTERNAL_SERVER_ERROR,
+      MESSAGES.INTERNAL_SERVER_ERROR
+    );
+  }
+};
+
+// Get detailed vote breakdown for a poll
+export const getPollVotes = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const currentUser = (req as any).user;
+
+    if (!currentUser) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.UNAUTHORIZED,
+        "User authentication required"
+      );
+      return;
+    }
+
+    if (!id) {
+      sendErrorResponse(res, STATUS_CODES.BAD_REQUEST, "Poll ID is required");
+      return;
+    }
+
+    // Validate ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.BAD_REQUEST,
+        "Invalid poll ID format"
+      );
+      return;
+    }
+
+    // Find poll by MongoDB _id
+    const poll = await Poll.findById(id)
+      .populate('createdBy', 'preferredName profilePhoto')
+      .populate('votes.userId', 'preferredName profilePhoto');
+
+    if (!poll) {
+      sendErrorResponse(res, STATUS_CODES.NOT_FOUND, "Poll not found");
+      return;
+    }
+
+    // Check if user is part of the trip
+    const trip = await Trip.findById(poll.trip_id);
+    if (!trip) {
+      sendErrorResponse(res, STATUS_CODES.NOT_FOUND, "Trip not found");
+      return;
+    }
+
+    const currentUserRef = `/users/${currentUser.userId}`;
+    const isOwner = trip.owner_id === currentUser.userId;
+    const isHost = trip.hosts.includes(currentUserRef);
+    const isTraveler = trip.users.includes(currentUserRef);
+
+    if (!isOwner && !isHost && !isTraveler) {
+      sendErrorResponse(
+        res,
+        STATUS_CODES.FORBIDDEN,
+        "You don't have access to this poll"
+      );
+      return;
+    }
+
+    // Get all unique voters
+    const uniqueVoters = new Set();
+    poll.votes?.forEach((vote: any) => {
+      uniqueVoters.add(vote.userId._id.toString());
+    });
+
+    // Format response with detailed vote breakdown
+    const formattedPoll = {
+      ...poll.toObject(),
+      total_voters: uniqueVoters.size,
+      trip_members_count: trip.users.length + (trip.hosts?.length || 0) + 1, // +1 for owner
+      options: poll.options?.map((option: string) => {
+        const optionVotes = poll.votes?.filter(
+          (vote: any) => vote.selectedOptionText.includes(option)
+        ) || [];
+        
+        return {
+          text: option,
+          vote_count: optionVotes.length,
+          voters: optionVotes.map((vote: any) => ({
+            _id: vote.userId._id,
+            preferredName: vote.userId.preferredName,
+            profilePhotoURL: vote.userId.profilePhoto?.url || null,
+            votedAt: vote.votedAt,
+          })),
+        };
+      }) || [],
+      // Transform votes array to rename userId to user and convert profilePhoto to profilePhotoURL
+      votes: poll.votes?.map((vote: any) => ({
+        _id: vote._id,
+        user: {
+          _id: vote.userId._id,
+          preferredName: vote.userId.preferredName,
+          profilePhotoURL: vote.userId.profilePhoto?.url || null, // Convert profilePhoto object to URL string
+        },
+        selectedOptionText: vote.selectedOptionText,
+        votedAt: vote.votedAt,
+      })) || [],
+    };
+
+    sendSuccessResponse(
+      res,
+      STATUS_CODES.OK,
+      "Poll votes retrieved successfully",
+      formattedPoll
+    );
+  } catch (error) {
+    console.error("Error getting poll votes:", error);
     sendErrorResponse(
       res,
       STATUS_CODES.INTERNAL_SERVER_ERROR,
