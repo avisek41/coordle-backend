@@ -2,12 +2,10 @@ import { Router } from "express";
 import {
   createPoll,
   getPollsByTrip,
-  getPollById,
   updatePoll,
   deletePoll,
   publishPoll,
   closePoll,
-  getAllPolls,
   voteOnPoll,
   getPollVotes,
 } from "../controllers/pollController";
@@ -17,8 +15,6 @@ const router = Router();
 console.log("pollRoutes");
 // Poll CRUD routes
 router.post("/", authenticateToken, createPoll);
-router.get("/", authenticateToken, getAllPolls);
-router.get("/:id", authenticateToken, getPollById);
 router.put("/:id", authenticateToken, updatePoll);
 router.delete("/:id", authenticateToken, deletePoll);
 

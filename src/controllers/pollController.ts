@@ -110,28 +110,27 @@ export const createPoll = async (
         );
         return;
       }
-      
       // Check if the date is in the past or current time
-      if (closeDate <= currentDate) {
+      if (closeDate < currentDate) {
         sendErrorResponse(
           res,
           STATUS_CODES.BAD_REQUEST,
           "Close poll date time must be in the future"
         );
         return;
-      }
-
-      // Check if there's at least 5 minutes difference
-      const timeDifference = closeDate.getTime() - currentDate.getTime();
-      const timeDifferenceMinutes = Math.floor(timeDifference / (1000 * 60));
-      
-      if (timeDifferenceMinutes < 5) {
-        sendErrorResponse(
-          res,
-          STATUS_CODES.BAD_REQUEST,
-          "Close poll date time must be at least 5 minutes in the future"
-        );
-        return;
+      } else if (closeDate >= currentDate) {
+        // Check if there's at least 5 minutes difference
+        const timeDifference = closeDate.getTime() - currentDate.getTime();
+        const timeDifferenceMinutes = Math.floor(timeDifference / (1000 * 60));
+        
+        if (timeDifferenceMinutes < 5) {
+          sendErrorResponse(
+            res,
+            STATUS_CODES.BAD_REQUEST,
+            "Close poll date time must be at least 5 minutes in the future"
+          );
+          return;
+        }
       }
 
       // Check if there's sufficient time for reminders
@@ -444,138 +443,6 @@ export const getPollsByTrip = async (
   }
 };
 
-// Get poll by ID
-export const getPollById = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
-  try {
-    const { id } = req.params;
-    const currentUser = (req as any).user;
-
-    if (!currentUser) {
-      sendErrorResponse(
-        res,
-        STATUS_CODES.UNAUTHORIZED,
-        "User authentication required"
-      );
-      return;
-    }
-
-    if (!id) {
-      sendErrorResponse(res, STATUS_CODES.BAD_REQUEST, "Poll ID is required");
-      return;
-    }
-
-    // Validate ObjectId format
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      sendErrorResponse(
-        res,
-        STATUS_CODES.BAD_REQUEST,
-        "Invalid poll ID format"
-      );
-      return;
-    }
-
-    // Find poll by MongoDB _id
-    const poll = await Poll.findById(id);
-
-    if (!poll) {
-      sendErrorResponse(res, STATUS_CODES.NOT_FOUND, "Poll not found");
-      return;
-    }
-
-    // Check if user is part of the trip
-    const trip = await Trip.findById(poll.trip_id);
-    if (!trip) {
-      sendErrorResponse(res, STATUS_CODES.NOT_FOUND, "Trip not found");
-      return;
-    }
-
-    const currentUserRef = `/users/${currentUser.userId}`;
-    const isOwner = trip.owner_id === currentUser.userId;
-    const isHost = trip.hosts.includes(currentUserRef);
-    const isTraveler = trip.users.includes(currentUserRef);
-
-    if (!isOwner && !isHost && !isTraveler) {
-      sendErrorResponse(
-        res,
-        STATUS_CODES.FORBIDDEN,
-        "You don't have access to this poll"
-      );
-      return;
-    }
-
-    // Get poll with vote information
-    const pollWithVotes = await Poll.findById(id)
-      .populate('createdBy', 'preferredName profilePhoto')
-      .populate('votes.userId', 'preferredName profilePhoto');
-
-    if (!pollWithVotes) {
-      sendErrorResponse(res, STATUS_CODES.NOT_FOUND, "Poll not found");
-      return;
-    }
-
-    // Convert to object to include virtual fields
-    const pollObj = pollWithVotes.toObject() as any;
-    
-    // Format options with vote counts and user selection status
-    pollObj.options = pollWithVotes.options?.map((option: string) => {
-      const optionVotes = pollWithVotes.votes?.filter(
-        (vote: any) => vote.selectedOptionText.includes(option)
-      ) || [];
-      
-      const isSelectedByUser = optionVotes.some(
-        (vote: any) => vote.userId._id.toString() === currentUser.userId
-      );
-
-      return {
-        text: option,
-        vote_count: optionVotes.length,
-        is_selected_by_user: isSelectedByUser,
-        voters: optionVotes.map((vote: any) => ({
-          _id: vote.userId._id,
-          preferredName: vote.userId.preferredName,
-          profilePhotoURL: vote.userId.profilePhoto?.url || null,
-        })).slice(0, 3), // Limit to 3 voters for display
-      };
-    }) || [];
-
-     // Get user information for the poll owner
-     const owner = await User.findById(poll.owner_id).select('_id email preferredName profilePhoto');
-    
-     if (owner) {
-       pollObj.createdBy = {
-         _id: owner._id,
-         email: owner.email,
-         preferredName: owner.preferredName,
-         profilePhotoURL: owner.profilePhoto?.url || null
-       };
-    } else {
-      pollObj.createdBy = {
-        _id: poll.owner_id,
-        email: null,
-        preferredName: null,
-        profilePhotoURL: null
-      };
-    }
-
-    sendSuccessResponse(
-      res,
-      STATUS_CODES.OK,
-      "Poll retrieved successfully",
-      pollObj
-    );
-  } catch (error) {
-    console.error("Error getting poll:", error);
-    sendErrorResponse(
-      res,
-      STATUS_CODES.INTERNAL_SERVER_ERROR,
-      MESSAGES.INTERNAL_SERVER_ERROR
-    );
-  }
-};
-
 // Update poll
 export const updatePoll = async (
   req: Request,
@@ -587,7 +454,10 @@ export const updatePoll = async (
       question,
       options,
       allow_multi_answers,
-      published,
+      close_poll_date_time,
+      display_close_poll_date,
+      display_close_poll_time,
+      reminders,
       status,
     } = req.body;
     const currentUser = (req as any).user;
@@ -640,10 +510,11 @@ export const updatePoll = async (
     if (question !== undefined) updateData.question = question;
     if (options !== undefined) updateData.options = options;
     if (allow_multi_answers !== undefined) updateData.allow_multi_answers = allow_multi_answers;
-    if (published !== undefined) updateData.published = published;
     if (status !== undefined) updateData.status = status;
-
-
+    if (close_poll_date_time !== undefined) updateData.close_poll_date_time = close_poll_date_time;
+    if (display_close_poll_date !== undefined) updateData.display_close_poll_date = display_close_poll_date;
+    if (display_close_poll_time !== undefined) updateData.display_close_poll_time = display_close_poll_time;
+    if (reminders !== undefined) updateData.reminders = reminders;
     // Update poll
     const updatedPoll = await Poll.findByIdAndUpdate(
       id,
@@ -827,167 +698,6 @@ export const closePoll = async (
   }
 };
 
-// Get all polls (admin or for trip participants)
-export const getAllPolls = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
-  try {
-    const { page = 1, limit = 10, status, published, trip_id, id } = req.query;
-    const currentUser = (req as any).user;
-
-    if (!currentUser) {
-      sendErrorResponse(
-        res,
-        STATUS_CODES.UNAUTHORIZED,
-        "User authentication required"
-      );
-      return;
-    }
-
-    // If id is provided as query parameter, return single poll
-    if (id) {
-      // Validate ObjectId format
-      if (!mongoose.Types.ObjectId.isValid(id as string)) {
-        sendErrorResponse(
-          res,
-          STATUS_CODES.BAD_REQUEST,
-          "Invalid poll ID format"
-        );
-        return;
-      }
-
-      // Find poll by MongoDB _id
-      const poll = await Poll.findById(id);
-
-      if (!poll) {
-        sendErrorResponse(res, STATUS_CODES.NOT_FOUND, "Poll not found");
-        return;
-      }
-
-      // Check if user is part of the trip
-      const trip = await Trip.findById(poll.trip_id);
-      if (!trip) {
-        sendErrorResponse(res, STATUS_CODES.NOT_FOUND, "Trip not found");
-        return;
-      }
-
-      const currentUserRef = `/users/${currentUser.userId}`;
-      const isOwner = trip.owner_id === currentUser.userId;
-      const isHost = trip.hosts.includes(currentUserRef);
-      const isTraveler = trip.users.includes(currentUserRef);
-
-      if (!isOwner && !isHost && !isTraveler) {
-        sendErrorResponse(
-          res,
-          STATUS_CODES.FORBIDDEN,
-          "You don't have access to this poll"
-        );
-        return;
-      }
-
-      // Convert to object to include virtual fields
-      const pollObj = poll.toObject() as any;
-      
-      // Get user information for the poll owner
-      const owner = await User.findById(poll.owner_id).select('_id email preferredName profilePhoto');
-      
-      if (owner) {
-        pollObj.createdBy = {
-          _id: owner._id,
-          email: owner.email,
-          preferredName: owner.preferredName,
-          profilePhotoURL: owner.profilePhoto?.url || null
-        };
-      } else {
-        pollObj.createdBy = {
-          _id: poll.owner_id,
-          email: null,
-          preferredName: null,
-          profilePhotoURL: null
-        };
-      }
-
-      sendSuccessResponse(
-        res,
-        STATUS_CODES.OK,
-        "Poll retrieved successfully",
-        pollObj
-      );
-      return;
-    }
-
-    const query: any = {};
-
-    // Add filters
-    if (status) {
-      query.status = status;
-    }
-
-    if (published !== undefined) {
-      query.published = published === "true";
-    }
-
-    if (trip_id) {
-      query.trip_id = trip_id;
-    }
-
-    const skip = (Number(page) - 1) * Number(limit);
-
-    const polls = await Poll.find(query)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(Number(limit));
-
-    const total = await Poll.countDocuments(query);
-
-    // Transform polls to include user information with profile photos
-    const pollsResponse = await Promise.all(
-      polls.map(async (poll) => {
-        const pollObj = poll.toObject() as any;
-        
-        // Get user information for the poll owner
-        const owner = await User.findById(poll.owner_id).select('_id email preferredName profilePhoto');
-        
-        if (owner) {
-          pollObj.createdBy = {
-            _id: owner._id,
-            email: owner.email,
-            preferredName: owner.preferredName,
-            profilePhotoURL: owner.profilePhoto?.url || null
-          };
-        } else {
-          pollObj.createdBy = {
-            _id: poll.owner_id,
-            email: null,
-            preferredName: null,
-            profilePhotoURL: null
-          };
-        }
-        
-        return pollObj;
-      })
-    );
-
-    sendSuccessResponse(res, STATUS_CODES.OK, "Polls retrieved successfully", {
-      polls: pollsResponse,
-      pagination: {
-        page: Number(page),
-        limit: Number(limit),
-        total,
-        pages: Math.ceil(total / Number(limit)),
-      },
-    });
-  } catch (error) {
-    console.error("Error getting polls:", error);
-    sendErrorResponse(
-      res,
-      STATUS_CODES.INTERNAL_SERVER_ERROR,
-      MESSAGES.INTERNAL_SERVER_ERROR
-    );
-  }
-};
-
 // Vote on a poll
 export const voteOnPoll = async (
   req: Request,
@@ -1040,7 +750,7 @@ export const voteOnPoll = async (
     }
 
     // Check if poll is published and active
-    if (!poll.published || poll.status === "Closed") {
+    if (poll.status === "Closed") {
       sendErrorResponse(
         res,
         STATUS_CODES.BAD_REQUEST,
@@ -1255,10 +965,34 @@ export const getPollVotes = async (
       uniqueVoters.add(vote.userId._id.toString());
     });
 
+    let createdBy;
+    // Get user information for the poll owner
+    const owner = await User.findById(poll.owner_id).select('_id email preferredName profilePhoto');
+    if (!owner) {
+      sendErrorResponse(res, STATUS_CODES.NOT_FOUND, "owner not found");
+      return;
+    }  
+    if (owner) {
+      createdBy = {
+        _id: owner._id,
+        email: owner.email,
+        preferredName: owner.preferredName,
+        profilePhotoURL: owner.profilePhoto?.url || null
+      };
+    } else {
+       createdBy = {
+        _id: poll.owner_id,
+        email: null,
+        preferredName: null,
+        profilePhotoURL: null
+      };
+    }
+
     // Format response with detailed vote breakdown
     const formattedPoll = {
       ...poll.toObject(),
       total_voters: uniqueVoters.size,
+      createdBy: createdBy,
       trip_members_count: trip.users.length + (trip.hosts?.length || 0) + 1, // +1 for owner
       options: poll.options?.map((option: string) => {
         const optionVotes = poll.votes?.filter(
@@ -1273,7 +1007,8 @@ export const getPollVotes = async (
             preferredName: vote.userId.preferredName,
             profilePhotoURL: vote.userId.profilePhoto?.url || null,
             votedAt: vote.votedAt,
-          })),
+          }),
+          ),
         };
       }) || [],
       // Transform votes array to rename userId to user and convert profilePhoto to profilePhotoURL
