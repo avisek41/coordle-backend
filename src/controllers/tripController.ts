@@ -1681,7 +1681,7 @@ export const getTripMembers = async (
 
     // Get user details with only required fields for members page
     const users = await User.find({ _id: { $in: uniqueUserIds } }).select(
-      "_id email phoneNumber userRole preferredName"
+      "_id email phoneNumber userRole preferredName profilePhoto"
     );
 
     // Get invite information for all users in this trip
@@ -1742,6 +1742,7 @@ export const getTripMembers = async (
         phoneNumber,
         tripRole: tripRole,
         preferredName: user.preferredName || null,
+        profilePhotoURL: user.profilePhoto?.url || '',
         inviteType: inviteType || null, // Include invite type for debugging
       };
     });
