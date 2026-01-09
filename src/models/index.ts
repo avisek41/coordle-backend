@@ -23,3 +23,5 @@ export { Invite, InviteType, type IInvite } from "./Invite";
 export { default as Poll, type IPoll, type IVote } from "./Poll";
 export { default as KnowledgeBase, type IKnowledgeBase } from "./KnowledgeBase";
 export { default as Meal, type IMeal, type IRestaurant, type IFoodOrder } from "./Meal";
+export { default as Lodging, type ILodging } from "./Lodging";
+export { default as Activity, type IActivity } from "./Activity";
