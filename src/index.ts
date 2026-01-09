@@ -20,6 +20,8 @@ import { handleStripeWebhook } from "./controllers/webhookController";
 import pollRoutes from "./routes/pollRoutes";
 import knowledgeBaseRoutes from "./routes/knowledgeBaseRoutes";
 import mealRoutes from "./routes/mealRoutes";
+import lodgingRoutes from "./routes/lodgingRoutes";
+import activityRoutes from "./routes/activityRoutes";
 
 // Load environment variables
 dotenv.config();
@@ -70,6 +72,8 @@ app.use("/api/trips", tripDocumentRoutes);
 app.use("/api/polls", pollRoutes);
 app.use("/api/knowledge-base", knowledgeBaseRoutes);
 app.use("/api/meals", mealRoutes);
+app.use("/api/lodging", lodgingRoutes);
+app.use("/api/activities", activityRoutes);
 app.use("/api", announcementRoutes);
 
 // Root endpoint
@@ -89,6 +93,8 @@ app.get("/", (req: Request, res: Response) => {
       plans: "/api/plans",
       payments: "/api/payments",
       trips: "/api/trips",
+      lodging: "/api/lodging",
+      activities: "/api/activities",
       polls: "/api/polls",
       knowledgeBase: "/api/knowledge-base",
       meals: "/api/meals",
